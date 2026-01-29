@@ -1,0 +1,518 @@
+<?php
+/**
+ * Plugin Name: Karasunouta Dev Favicon Switcher
+ * Plugin URI: https://www.karasunouta.com/
+ * Description: Automatically switches favicon between production and development environments
+ * Version: 1.0.0
+ * Requires at least: 5.0
+ * Requires PHP: 7.0
+ * Author: karasunouta
+ * Author URI: https://www.karasunouta.com/
+ * Text Domain: ku-df-switcher
+ * License: Commercial
+ * License URI: https://www.karasunouta.com/
+ * 
+ * Copyright (c) 2026 karasunouta
+ * Licensed for two sites use.
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Dev_Favicon_Switcher {
+    
+    private $option_name = 'karasunouta_dev_favicon_switcher_settings';
+    private $required_sizes = array(32, 180, 192, 270);
+    private $slug = 'ku-df-switcher';   // テキストドメインと統一。多言語対応関数内ではベタ書き必須
+    
+    public function __construct() {
+        add_action('admin_menu', array($this, 'add_settings_page'));
+        add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // Frontend filters
+        add_filter('get_site_icon_url', array($this, 'replace_favicon_url'), 10, 1);
+        add_filter('site_icon_meta_tags', array($this, 'replace_favicon_meta_tags'), 10, 1);
+
+        // インストール済みプラグイン一覧から設定ページにリンク
+        add_filter(
+            'plugin_action_links_' . plugin_basename(__FILE__),
+            [$this, 'add_settings_link']
+        );
+    }
+    
+    public function add_settings_page() {
+        add_options_page(
+            __('Dev Favicon Switcher', 'ku-df-switcher'),
+            __('Dev Favicon', 'ku-df-switcher'),
+            'manage_options',
+            $this->slug,
+            array($this, 'render_settings_page')
+        );
+    }
+    
+    public function register_settings() {
+        register_setting(
+            'dev_favicon_settings_group', 
+            $this->option_name,
+            array($this, 'sanitize_settings')
+        );
+    }
+    
+    public function sanitize_settings($input) {
+        $sanitized = array();
+        
+        // Dev icon ID
+        $sanitized['dev_icon_id'] = !empty($input['dev_icon_id']) ? absint($input['dev_icon_id']) : '';
+        
+        // Auto-detect
+        $sanitized['auto_detect'] = !empty($input['auto_detect']) ? '1' : '0';
+        
+        // Dev URLs (textarea, one per line)
+        $sanitized['dev_urls'] = !empty($input['dev_urls']) ? sanitize_textarea_field($input['dev_urls']) : '';
+        
+        // Custom sizes (textarea, numbers only)
+        if (!empty($input['custom_sizes'])) {
+            $lines = explode("\n", $input['custom_sizes']);
+            $valid_sizes = array();
+            foreach ($lines as $line) {
+                $size = trim($line);
+                if (is_numeric($size) && $size > 0) {
+                    $valid_sizes[] = intval($size);
+                }
+            }
+            $sanitized['custom_sizes'] = implode("\n", $valid_sizes);
+        } else {
+            $sanitized['custom_sizes'] = '';
+        }
+        
+        // Development iconが設定されている場合、必要なサイズを自動生成
+        if (!empty($sanitized['dev_icon_id'])) {
+            $this->generate_icon_sizes($sanitized['dev_icon_id'], $sanitized['custom_sizes']);
+        }
+        
+        return $sanitized;
+    }
+
+    /**
+     * プラグイン一覧ページに設定メニューへのリンクを追加
+     */
+    public function add_settings_link(array $links): array {
+        $settings_url = admin_url( "admin.php?page={$this->slug}" );
+
+        $settings_link = '<a href="' . esc_url($settings_url) . '">' . __( 'Settings' ) . '</a>';
+
+        // 行の先頭に追加
+        array_unshift($links, $settings_link);
+
+        return $links;
+    }
+
+    public function enqueue_admin_scripts($hook) {
+        if ($hook !== "settings_page_{$this->slug}") {
+            return;
+        }
+        
+        wp_enqueue_media();
+        
+        // Site Icon Cropper (WordPress標準の機能を使用)
+        wp_enqueue_script('site-icon');
+        
+        // ビルドされたJSファイルを読み込み
+        $asset_file = include plugin_dir_path(__FILE__) . 'build/index.asset.php';
+        
+        wp_enqueue_script(
+            'dev-favicon-admin',
+            plugins_url('build/index.js', __FILE__),
+            array_merge($asset_file['dependencies'], array('site-icon')),
+            $asset_file['version'],
+            true
+        );
+        
+        wp_localize_script('dev-favicon-admin', 'devFaviconAjax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('dev_favicon_nonce'),
+            'site_icon_nonce' => wp_create_nonce('set-site-icon')
+        ));
+        
+        // CSSはビルドしないのでそのまま
+        wp_enqueue_style(
+            'dev-favicon-admin',
+            plugins_url('assets/css/admin.css', __FILE__),
+            array(),
+            '1.0.0'
+        );
+    }
+    
+    public function render_settings_page() {
+        $settings = get_option($this->option_name, array(
+            'dev_icon_id' => '',
+            'dev_urls' => '',
+            'auto_detect' => '1',
+            'custom_sizes' => ''
+        ));
+        
+        $current_icon_id = get_option('site_icon');
+        $current_icon_url = $current_icon_id ? wp_get_attachment_image_url($current_icon_id, 'full') : '';
+        
+        $dev_icon_url = !empty($settings['dev_icon_id']) ? 
+            wp_get_attachment_image_url($settings['dev_icon_id'], 'full') : '';
+        
+        ?>
+        <div class="wrap">
+            <h1><?php _e('Dev Favicon Switcher Settings', 'ku-df-switcher'); ?></h1>
+            
+            <?php if ($this->is_dev_environment($settings)): ?>
+                <div class="notice notice-info">
+                    <p><?php _e('Development environment detected!', 'ku-df-switcher'); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <form method="post" action="options.php" id="dev-favicon-form">
+                <?php settings_fields('dev_favicon_settings_group'); ?>
+                
+                <table class="form-table">
+                    <!-- Production Icon (Read-only) -->
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Production Favicon', 'ku-df-switcher'); ?>
+                        </th>
+                        <td>
+                            <?php if ($current_icon_url): ?>
+                                <img src="<?php echo esc_url($current_icon_url); ?>" 
+                                     style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">
+                                <p class="description">
+                                    <?php printf(__('Current site icon (set in <a href="%s">Settings > General</a>)', 'ku-df-switcher'), admin_url('options-general.php')); ?>
+                                </p>
+                            <?php else: ?>
+                                <p class="description">
+                                    <?php printf(__('No site icon set. Please set one in <a href="%s">Settings > General</a>', 'ku-df-switcher'), admin_url('options-general.php')); ?>
+                                </p>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    
+                    <!-- Development Icon -->
+                    <tr>
+                        <th scope="row">
+                            <label for="dev_icon_id"><?php _e('Development Favicon', 'ku-df-switcher'); ?></label>
+                        </th>
+                        <td>
+                            <div id="dev-icon-preview">
+                                <?php if ($dev_icon_url): ?>
+                                    <img src="<?php echo esc_url($dev_icon_url); ?>" 
+                                         style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">
+                                <?php endif; ?>
+                            </div>
+                            <input type="hidden" 
+                                   name="<?php echo $this->option_name; ?>[dev_icon_id]" 
+                                   id="dev_icon_id" 
+                                   value="<?php echo esc_attr($settings['dev_icon_id']); ?>">
+                            <button type="button" class="button" id="select-dev-icon">
+                                <?php _e('Select Development Icon', 'ku-df-switcher'); ?>
+                            </button>
+                            <button type="button" class="button" id="remove-dev-icon" 
+                                    <?php echo empty($settings['dev_icon_id']) ? 'style="display:none;"' : ''; ?>>
+                                <?php _e('Remove', 'ku-df-switcher'); ?>
+                            </button>
+                            <p class="description">
+                                <?php _e('Choose an icon that will be displayed in development environments', 'ku-df-switcher'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Auto-detect Development Environment -->
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Auto-detect Development', 'ku-df-switcher'); ?>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" 
+                                       name="<?php echo $this->option_name; ?>[auto_detect]" 
+                                       value="1" 
+                                       <?php checked($settings['auto_detect'], '1'); ?>>
+                                <?php _e('Automatically detect .local, .test, .dev domains', 'ku-df-switcher'); ?>
+                            </label>
+                            <p class="description">
+                                <?php _e('Recommended: Enable this to automatically apply development favicon on common development domains', 'ku-df-switcher'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Development URLs -->
+                    <tr>
+                        <th scope="row">
+                            <label for="dev_urls"><?php _e('Development URLs', 'ku-df-switcher'); ?></label>
+                        </th>
+                        <td>
+                            <textarea name="<?php echo $this->option_name; ?>[dev_urls]" 
+                                      id="dev_urls" 
+                                      rows="4" 
+                                      class="large-text"
+                                      placeholder="https://mysite.local/&#10;https://staging.mysite.com/"><?php echo esc_textarea($settings['dev_urls']); ?></textarea>
+                            <p class="description">
+                                <?php _e('Enter development URLs (one per line). The plugin will switch to development favicon when the current URL starts with any of these.', 'ku-df-switcher'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Custom Sizes (Advanced) -->
+                    <tr>
+                        <th scope="row">
+                            <label for="custom_sizes"><?php _e('Custom Icon Sizes', 'ku-df-switcher'); ?></label>
+                        </th>
+                        <td>
+                            <textarea name="<?php echo $this->option_name; ?>[custom_sizes]" 
+                                      id="custom_sizes" 
+                                      rows="3" 
+                                      class="regular-text"
+                                      placeholder="64&#10;128&#10;256"><?php echo esc_textarea($settings['custom_sizes']); ?></textarea>
+                            <p class="description">
+                                <?php _e('Optional: Add custom icon sizes in pixels (one per line). Standard sizes (32, 180, 192, 270) are always included.', 'ku-df-switcher'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <?php submit_button(__('Save Settings', 'ku-df-switcher')); ?>
+            </form>
+        </div>
+        <?php
+    }
+    
+    public function ajax_check_sizes() {
+        check_ajax_referer('dev_favicon_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $settings = get_option($this->option_name);
+        if (empty($settings['dev_icon_id'])) {
+            wp_send_json_error('No development icon selected');
+        }
+        
+        $file_path = get_attached_file($settings['dev_icon_id']);
+        if (!$file_path || !file_exists($file_path)) {
+            wp_send_json_error('Development icon file not found');
+        }
+        
+        $missing_sizes = array();
+        $existing_sizes = array();
+        
+        foreach ($this->required_sizes as $size) {
+            $sized_file = str_replace('.png', '-' . $size . 'x' . $size . '.png', $file_path);
+            if (file_exists($sized_file)) {
+                $existing_sizes[] = $size;
+            } else {
+                $missing_sizes[] = $size;
+            }
+        }
+        
+        wp_send_json_success(array(
+            'existing' => $existing_sizes,
+            'missing' => $missing_sizes
+        ));
+    }
+    
+    public function ajax_generate_sizes() {
+        check_ajax_referer('dev_favicon_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $settings = get_option($this->option_name);
+        if (empty($settings['dev_icon_id'])) {
+            wp_send_json_error('No development icon selected');
+        }
+        
+        $result = $this->generate_icon_sizes($settings['dev_icon_id']);
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+        }
+        
+        wp_send_json_success($result);
+    }
+    
+    private function generate_icon_sizes($attachment_id, $custom_sizes_str = '') {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        
+        $file_path = get_attached_file($attachment_id);
+        if (!$file_path || !file_exists($file_path)) {
+            return new WP_Error('file_not_found', 'Icon file not found');
+        }
+        
+        $image = wp_get_image_editor($file_path);
+        if (is_wp_error($image)) {
+            return $image;
+        }
+        
+        // 基本サイズ + カスタムサイズ
+        $sizes = $this->required_sizes;
+        
+        if (!empty($custom_sizes_str)) {
+            $custom_lines = explode("\n", $custom_sizes_str);
+            foreach ($custom_lines as $line) {
+                $size = intval(trim($line));
+                if ($size > 0 && !in_array($size, $sizes)) {
+                    $sizes[] = $size;
+                }
+            }
+        }
+        
+        $generated = array();
+        $skipped = array();
+        $errors = array();
+        
+        foreach ($sizes as $size) {
+            $sized_file = str_replace('.png', '-' . $size . 'x' . $size . '.png', $file_path);
+            
+            if (file_exists($sized_file)) {
+                $skipped[] = $size;
+                continue;
+            }
+            
+            $image_copy = clone $image;
+            $image_copy->resize($size, $size, true);
+            $saved = $image_copy->save($sized_file);
+            
+            if (is_wp_error($saved)) {
+                $errors[] = sprintf('Size %dx%d: %s', $size, $size, $saved->get_error_message());
+            } else {
+                $generated[] = $size;
+            }
+        }
+        
+        return array(
+            'generated' => $generated,
+            'skipped' => $skipped,
+            'errors' => $errors
+        );
+    }
+    
+    private function is_dev_environment($settings = null) {
+        if (!$settings) {
+            $settings = get_option($this->option_name);
+        }
+        
+        $current_url = home_url();
+        
+        // 自動検出が有効な場合
+        if (!empty($settings['auto_detect']) && $settings['auto_detect'] === '1') {
+            $hostname = parse_url($current_url, PHP_URL_HOST);
+            $dev_extensions = array('.local', '.test', '.dev');
+            foreach ($dev_extensions as $ext) {
+                if (strpos($hostname, $ext) !== false) {
+                    return true;
+                }
+            }
+        }
+        
+        // 手動で設定されたURLをチェック
+        if (!empty($settings['dev_urls'])) {
+            $dev_urls = explode("\n", $settings['dev_urls']);
+            foreach ($dev_urls as $dev_url) {
+                $dev_url = trim($dev_url);
+                if (!empty($dev_url) && strpos($current_url, rtrim($dev_url, '/')) === 0) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    public function replace_favicon_url($url) {
+        if (!$this->is_dev_environment()) {
+            return $url;
+        }
+        
+        $settings = get_option($this->option_name);
+        if (empty($settings['dev_icon_id'])) {
+            return $url;
+        }
+        
+        // 本番アイコンのファイル名を取得
+        $prod_filename = basename($url);
+        $prod_filename_base = preg_replace('/(-\d+x\d+)?\.png$/', '', $prod_filename);
+        
+        // 開発アイコンのURLとファイル名を取得
+        $dev_icon_url = wp_get_attachment_image_url($settings['dev_icon_id'], 'full');
+        if (!$dev_icon_url) {
+            return $url;
+        }
+        
+        $dev_filename = basename($dev_icon_url);
+        $dev_filename_base = preg_replace('/\.png$/', '', $dev_filename);
+        
+        // URLのファイル名部分を置換（サイズsuffixは保持）
+        $url = preg_replace(
+            '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.png#',
+            '/' . $dev_filename_base . '$1.png',
+            $url
+        );
+        
+        // パスも置換（年月フォルダが異なる場合に対応）
+        $prod_path = dirname(parse_url(wp_get_attachment_url(get_option('site_icon')), PHP_URL_PATH));
+        $dev_path = dirname(parse_url($dev_icon_url, PHP_URL_PATH));
+        
+        if ($prod_path !== $dev_path) {
+            $url = str_replace($prod_path, $dev_path, $url);
+        }
+        
+        return $url;
+    }
+    
+    public function replace_favicon_meta_tags($meta_tags) {
+        if (!$this->is_dev_environment()) {
+            return $meta_tags;
+        }
+        
+        $settings = get_option($this->option_name);
+        if (empty($settings['dev_icon_id'])) {
+            return $meta_tags;
+        }
+        
+        $dev_icon_url = wp_get_attachment_image_url($settings['dev_icon_id'], 'full');
+        if (!$dev_icon_url) {
+            return $meta_tags;
+        }
+        
+        // 本番アイコンのパスとファイル名を取得
+        $prod_icon_id = get_option('site_icon');
+        if (!$prod_icon_id) {
+            return $meta_tags;
+        }
+        
+        $prod_icon_url = wp_get_attachment_url($prod_icon_id);
+        $prod_filename_base = preg_replace('/\.png$/', '', basename($prod_icon_url));
+        $prod_path = dirname(parse_url($prod_icon_url, PHP_URL_PATH));
+        
+        // 開発アイコンの情報
+        $dev_filename_base = preg_replace('/\.png$/', '', basename($dev_icon_url));
+        $dev_path = dirname(parse_url($dev_icon_url, PHP_URL_PATH));
+        
+        foreach ($meta_tags as &$tag) {
+            // ファイル名を置換
+            $tag = preg_replace(
+                '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.png#',
+                '/' . $dev_filename_base . '$1.png',
+                $tag
+            );
+            
+            // パスを置換
+            if ($prod_path !== $dev_path) {
+                $tag = str_replace($prod_path, $dev_path, $tag);
+            }
+        }
+        
+        return $meta_tags;
+    }
+}
+
+// Initialize plugin
+new Dev_Favicon_Switcher();

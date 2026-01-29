@@ -1,0 +1,14 @@
+{
+  "name": "karasunouta-dev-favicon-switcher",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "plugin-zip": "wp-scripts plugin-zip",
+    "plugin-export": "npm run build && npm run plugin-zip"
+  },
+  "author": "karasunouta",
+  "devDependencies": {
+    "@wordpress/scripts": "^31.3.0"
+  }
+}

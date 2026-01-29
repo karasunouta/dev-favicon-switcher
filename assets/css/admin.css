@@ -1,0 +1,138 @@
+/* Dev Favicon Switcher Admin Styles */
+
+.dev-favicon-settings {
+    max-width: 800px;
+}
+
+#dev-icon-preview {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+}
+
+#dev-icon-preview:empty {
+    display: none;
+}
+
+#dev-icon-preview img {
+    display: block;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#sizes-status {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+#sizes-status ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#sizes-status li {
+    padding: 5px 0;
+    font-size: 14px;
+}
+
+#sizes-status li strong {
+    font-weight: 600;
+}
+
+.notice.notice-info {
+    border-left-color: #00a0d2;
+}
+
+.notice.notice-info p {
+    margin: 0.5em 0;
+    font-weight: 500;
+}
+
+/* Button styles */
+#check-sizes,
+#generate-sizes {
+    margin-right: 10px;
+}
+
+#generate-sizes {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+#generate-sizes:hover {
+    background: #135e96;
+    border-color: #135e96;
+}
+
+/* Success/Error messages in status */
+.dev-favicon-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.dev-favicon-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* Form table improvements */
+.form-table th {
+    width: 200px;
+}
+
+.form-table td input[type="url"],
+.form-table td input[type="text"] {
+    width: 100%;
+    max-width: 400px;
+}
+
+.form-table td .description {
+    margin-top: 5px;
+    font-style: italic;
+    color: #646970;
+}
+
+/* Advanced section */
+.form-table fieldset label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-table fieldset label input {
+    margin-top: 5px;
+}
+
+/* Spinner positioning */
+.spinner {
+    visibility: visible;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.spinner.is-active {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .form-table th {
+        width: auto;
+    }
+    
+    .form-table td input[type="url"],
+    .form-table td input[type="text"] {
+        max-width: 100%;
+    }
+}
