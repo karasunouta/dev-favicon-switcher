@@ -31,17 +31,28 @@
         const selectButton = document.getElementById('select-dev-icon');
         const removeButton = document.getElementById('remove-dev-icon');
         
-        if (!selectButton || typeof wp === 'undefined' || typeof wp.customizer === 'undefined') {
-            // Fallback to simple media uploader if site-icon script not loaded
+        if (!selectButton) return;
+        
+        // Check if WordPress Media and Cropper are available
+        if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
+            console.error('WordPress media library not loaded');
             setupSimpleMediaUploader();
             return;
         }
         
+        let iconCropperFrame;
+        
         selectButton.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // WordPressのサイトアイコンクロッパーを使用
-            const frame = wp.media({
+            // Reopen if already exists
+            if (iconCropperFrame) {
+                iconCropperFrame.open();
+                return;
+            }
+            
+            // Create media frame with cropper
+            iconCropperFrame = wp.media({
                 button: {
                     text: 'Select and Crop',
                     close: false
@@ -50,13 +61,19 @@
                     new wp.media.controller.Library({
                         title: 'Choose Development Icon',
                         library: wp.media.query({ type: 'image' }),
+                        multiple: false,
                         date: false,
+                        priority: 20,
                         suggestedWidth: 512,
                         suggestedHeight: 512
                     }),
-                    new wp.media.controller.SiteIconCropper({
+                    new wp.media.controller.CustomizeImageCropper({
+                        imgSelectOptions: calculateImageSelectOptions,
                         control: {
+                            id: 'dev-favicon-control',
                             params: {
+                                flex_width: false,
+                                flex_height: false,
                                 width: 512,
                                 height: 512
                             }
@@ -65,47 +82,129 @@
                 ]
             });
             
-            frame.on('cropped', function(croppedImage) {
-                const attachmentId = croppedImage.id;
-                const attachmentUrl = croppedImage.url;
+            // When user selects an image from library
+            iconCropperFrame.on('select', function() {
+                const selection = iconCropperFrame.state().get('selection');
+                const attachment = selection.first().toJSON();
                 
-                // Set the ID
-                document.getElementById('dev_icon_id').value = attachmentId;
-                
-                // Update preview
-                const preview = document.getElementById('dev-icon-preview');
-                preview.innerHTML = `<img src="${attachmentUrl}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
-                
-                // Show remove button
-                if (removeButton) {
-                    removeButton.style.display = 'inline-block';
-                }
-                
-                frame.close();
+                // Proceed to crop state
+                iconCropperFrame.setState('cropper');
             });
             
-            frame.on('skippedcrop', function(selection) {
-                const attachment = selection.get('attachment');
-                const attachmentId = attachment.get('id');
-                const attachmentUrl = attachment.get('url');
-                
-                // Set the ID
-                document.getElementById('dev_icon_id').value = attachmentId;
-                
-                // Update preview
-                const preview = document.getElementById('dev-icon-preview');
-                preview.innerHTML = `<img src="${attachmentUrl}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
-                
-                // Show remove button
-                if (removeButton) {
-                    removeButton.style.display = 'inline-block';
-                }
-                
-                frame.close();
+            // When cropping is complete
+            iconCropperFrame.on('cropped', function(croppedImage) {
+                // Custom crop handler
+                handleCrop(croppedImage);
             });
             
-            frame.open();
+            // When user skips cropping
+            iconCropperFrame.on('skippedcrop', function() {
+                const selection = iconCropperFrame.state().get('selection');
+                const attachment = selection.first().toJSON();
+                setDevIcon(attachment.id, attachment.url);
+                iconCropperFrame.close();
+            });
+            
+            iconCropperFrame.open();
         });
+        
+        // Handle crop with custom Ajax
+        function handleCrop(croppedImage) {
+            const cropperState = iconCropperFrame.state('cropper');
+            const attachment = cropperState.get('selection').first();
+            const cropDetails = cropperState.get('cropDetails');
+            
+            // Send to our custom handler
+            fetch(devFaviconAjax.ajax_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'dev_favicon_crop_image',
+                    nonce: wp.customize.utils.getCropNonce(),
+                    id: attachment.get('id'),
+                    cropDetails: JSON.stringify({
+                        x1: cropDetails.x1,
+                        y1: cropDetails.y1,
+                        width: cropDetails.width,
+                        height: cropDetails.height
+                    })
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    setDevIcon(data.data.id, data.data.url);
+                    iconCropperFrame.close();
+                } else {
+                    alert('Crop error: ' + (data.data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Crop error:', error);
+                alert('Failed to crop image');
+            });
+        }
+        
+        // Helper function to set dev icon
+        function setDevIcon(attachmentId, attachmentUrl) {
+            document.getElementById('dev_icon_id').value = attachmentId;
+            
+            const preview = document.getElementById('dev-icon-preview');
+            preview.innerHTML = `<img src="${attachmentUrl}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
+            
+            if (removeButton) {
+                removeButton.style.display = 'inline-block';
+            }
+        }
+        
+        // Calculate crop area for square 1:1 ratio
+        function calculateImageSelectOptions(attachment, controller) {
+            const realWidth = attachment.get('width');
+            const realHeight = attachment.get('height');
+            const xInit = 512;
+            const yInit = 512;
+            
+            // Can skip crop if image is already small enough
+            const canSkipCrop = (realWidth <= xInit && realHeight <= yInit);
+            controller.set('canSkipCrop', canSkipCrop);
+            
+            // Calculate initial crop area (centered square)
+            const ratio = xInit / yInit; // 1:1 for square
+            const imgSelectOptions = {
+                handles: true,
+                keys: true,
+                instance: true,
+                persistent: true,
+                imageWidth: realWidth,
+                imageHeight: realHeight,
+                minWidth: xInit > realWidth ? realWidth : xInit,
+                minHeight: yInit > realHeight ? realHeight : yInit,
+                aspectRatio: xInit + ':' + yInit
+            };
+            
+            // Center the crop area
+            if (realWidth > realHeight) {
+                // Landscape - center horizontally
+                const cropHeight = realHeight;
+                const cropWidth = cropHeight * ratio;
+                imgSelectOptions.x1 = Math.max(0, (realWidth - cropWidth) / 2);
+                imgSelectOptions.x2 = Math.min(realWidth, imgSelectOptions.x1 + cropWidth);
+                imgSelectOptions.y1 = 0;
+                imgSelectOptions.y2 = realHeight;
+            } else {
+                // Portrait or square - center vertically
+                const cropWidth = realWidth;
+                const cropHeight = cropWidth / ratio;
+                imgSelectOptions.y1 = Math.max(0, (realHeight - cropHeight) / 2);
+                imgSelectOptions.y2 = Math.min(realHeight, imgSelectOptions.y1 + cropHeight);
+                imgSelectOptions.x1 = 0;
+                imgSelectOptions.x2 = realWidth;
+            }
+            
+            return imgSelectOptions;
+        }
         
         // Remove dev icon
         if (removeButton) {

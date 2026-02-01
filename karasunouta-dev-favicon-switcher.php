@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.0.0
+ * Version: 1.0.3
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -34,6 +34,9 @@ class Dev_Favicon_Switcher {
         // Frontend filters
         add_filter('get_site_icon_url', array($this, 'replace_favicon_url'), 10, 1);
         add_filter('site_icon_meta_tags', array($this, 'replace_favicon_meta_tags'), 10, 1);
+
+        // 画像切り抜きAjax handler
+        add_action('wp_ajax_dev_favicon_crop_image', array($this, 'ajax_crop_image'));
 
         // インストール済みプラグイン一覧から設定ページにリンク
         add_filter(
@@ -108,16 +111,63 @@ class Dev_Favicon_Switcher {
 
         return $links;
     }
+    
+    /**
+     * 画像切り抜きAjaxハンドラー
+     */
+    public function ajax_crop_image() {
+        check_ajax_referer('dev-favicon-crop', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+        
+        $attachment_id = absint($_POST['id']);
+        $crop_details = $_POST['cropDetails'];
+        
+        $cropped = wp_crop_image(
+            $attachment_id,
+            (int) $crop_details['x1'],
+            (int) $crop_details['y1'],
+            (int) $crop_details['width'],
+            (int) $crop_details['height'],
+            512, // destination width
+            512, // destination height
+            false, // not a thumbnail
+            'cropped-dev-favicon-' . md5(time()) . '.png'
+        );
+        
+        if (is_wp_error($cropped)) {
+            wp_send_json_error(array('message' => $cropped->get_error_message()));
+        }
+        
+        // メディアライブラリに追加
+        $object = array(
+            'post_title' => 'cropped-dev-favicon',
+            'post_mime_type' => 'image/png',
+            'guid' => $cropped,
+            'context' => 'dev-favicon'
+        );
+        
+        $attachment_id = wp_insert_attachment($object, $cropped);
+        $metadata = wp_generate_attachment_metadata($attachment_id, $cropped);
+        wp_update_attachment_metadata($attachment_id, $metadata);
+        
+        wp_send_json_success(array(
+            'id' => $attachment_id,
+            'url' => wp_get_attachment_url($attachment_id)
+        ));
+    }
 
     public function enqueue_admin_scripts($hook) {
         if ($hook !== "settings_page_{$this->slug}") {
             return;
         }
         
+        // WordPress標準のメディアライブラリとクロッパー
         wp_enqueue_media();
-        
-        // Site Icon Cropper (WordPress標準の機能を使用)
-        wp_enqueue_script('site-icon');
+        wp_enqueue_script('media-views');
+        wp_enqueue_script('customize-controls');
         
         // ビルドされたJSファイルを読み込み
         $asset_file = include plugin_dir_path(__FILE__) . 'build/index.asset.php';
@@ -125,7 +175,7 @@ class Dev_Favicon_Switcher {
         wp_enqueue_script(
             'dev-favicon-admin',
             plugins_url('build/index.js', __FILE__),
-            array_merge($asset_file['dependencies'], array('site-icon')),
+            array_merge($asset_file['dependencies'], array('media-views', 'customize-controls')),
             $asset_file['version'],
             true
         );
@@ -136,7 +186,9 @@ class Dev_Favicon_Switcher {
             'site_icon_nonce' => wp_create_nonce('set-site-icon')
         ));
         
-        // CSSはビルドしないのでそのまま
+        // Customizer用のスタイル
+        wp_enqueue_style('customize-controls');
+        
         wp_enqueue_style(
             'dev-favicon-admin',
             plugins_url('assets/css/admin.css', __FILE__),
