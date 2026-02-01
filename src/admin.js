@@ -113,37 +113,28 @@
             const cropperState = iconCropperFrame.state('cropper');
             const attachment = cropperState.get('selection').first();
             const cropDetails = cropperState.get('cropDetails');
-            
-            // Send to our custom handler
-            fetch(devFaviconAjax.ajax_url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    action: 'dev_favicon_crop_image',
-                    nonce: wp.customize.utils.getCropNonce(),
+            const cropNonce = devFaviconAjax.crop_nonce;
+
+            // fetchの代わりに、WordPress標準のwp.ajaxを使うとより安全です
+            wp.ajax.send('dev_favicon_crop_image', {
+                data: {
+                    nonce: cropNonce,
                     id: attachment.get('id'),
-                    cropDetails: JSON.stringify({
-                        x1: cropDetails.x1,
-                        y1: cropDetails.y1,
-                        width: cropDetails.width,
-                        height: cropDetails.height
-                    })
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setDevIcon(data.data.id, data.data.url);
+                    cropDetails: JSON.stringify(cropDetails)
+                },
+                success: function(attachmentData) {
+                    // attachmentData は PHP側の wp_prepare_attachment_for_js の結果
+                    setDevIcon(attachmentData.id, attachmentData.url);
+                    
+                    // 処理が完了したことを通知してフレームを閉じる
+                    iconCropperFrame.setState('library'); // 状態を戻す
                     iconCropperFrame.close();
-                } else {
-                    alert('Crop error: ' + (data.data.message || 'Unknown error'));
+                },
+                error: function(errorMessage) {
+                    alert('Crop error: ' + (errorMessage || 'Unknown error'));
+                    // エラー時もボタンを戻す必要があるため、一度閉じるか状態をリセット
+                    iconCropperFrame.close();
                 }
-            })
-            .catch(error => {
-                console.error('Crop error:', error);
-                alert('Failed to crop image');
             });
         }
         

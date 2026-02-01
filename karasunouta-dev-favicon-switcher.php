@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.0.3
+ * Version: 1.0.7
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -123,40 +123,49 @@ class Dev_Favicon_Switcher {
         }
         
         $attachment_id = absint($_POST['id']);
-        $crop_details = $_POST['cropDetails'];
+        $crop_details = json_decode(stripslashes($_POST['cropDetails']), true);
         
+        // 1. クロップ実行：保存先を指定せずWPに任せる（/tmp か uploadsのルートに一時生成される）
         $cropped = wp_crop_image(
             $attachment_id,
             (int) $crop_details['x1'],
             (int) $crop_details['y1'],
             (int) $crop_details['width'],
             (int) $crop_details['height'],
-            512, // destination width
-            512, // destination height
-            false, // not a thumbnail
-            'cropped-dev-favicon-' . md5(time()) . '.png'
+            512,
+            512
         );
         
         if (is_wp_error($cropped)) {
             wp_send_json_error(array('message' => $cropped->get_error_message()));
         }
-        
-        // メディアライブラリに追加
-        $object = array(
-            'post_title' => 'cropped-dev-favicon',
+
+        // 2. 添付ファイル情報の構成
+        // post_content や guid を独自に指定しないのがコツです
+        $attachment = array(
+            'post_title'     => 'dev-favicon-icon',
             'post_mime_type' => 'image/png',
-            'guid' => $cropped,
-            'context' => 'dev-favicon'
         );
         
-        $attachment_id = wp_insert_attachment($object, $cropped);
-        $metadata = wp_generate_attachment_metadata($attachment_id, $cropped);
-        wp_update_attachment_metadata($attachment_id, $metadata);
+        // 3. メディアライブラリに正規のパスで挿入
+        // wp_insert_attachment は、ファイルをuploadsの年月フォルダに移動させ、DBを整えてくれます
+        $new_attachment_id = wp_insert_attachment($attachment, $cropped);
         
-        wp_send_json_success(array(
-            'id' => $attachment_id,
-            'url' => wp_get_attachment_url($attachment_id)
-        ));
+        if (is_wp_error($new_attachment_id)) {
+            @unlink($cropped); // 失敗したら一時ファイルを削除
+            wp_send_json_error(array('message' => $new_attachment_id->get_error_message()));
+        }
+        
+        // 4. メタデータの生成・更新
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        wp_update_attachment_metadata(
+            $new_attachment_id, 
+            wp_generate_attachment_metadata($new_attachment_id, $cropped)
+        );
+        
+        // 5. レスポンス生成
+        $response = wp_prepare_attachment_for_js($new_attachment_id);
+        wp_send_json_success($response);
     }
 
     public function enqueue_admin_scripts($hook) {
@@ -183,7 +192,7 @@ class Dev_Favicon_Switcher {
         wp_localize_script('dev-favicon-admin', 'devFaviconAjax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('dev_favicon_nonce'),
-            'site_icon_nonce' => wp_create_nonce('set-site-icon')
+            'crop_nonce' => wp_create_nonce('dev-favicon-crop')  // この行を追加
         ));
         
         // Customizer用のスタイル
