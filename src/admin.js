@@ -199,13 +199,36 @@
             removeButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm('Are you sure you want to remove the development icon?')) {
+                if (!confirm('Are you sure you want to remove the development icon setting?\n\n(The image file will remain in your media library)')) {
                     return;
                 }
                 
-                document.getElementById('dev_icon_id').value = '';
-                document.getElementById('dev-icon-preview').innerHTML = '';
-                this.style.display = 'none';
+                // クリア処理を実行
+                const formData = new FormData();
+                formData.append('action', 'dev_favicon_remove_icon');
+                formData.append('nonce', devFaviconAjax.nonce);
+                
+                fetch(devFaviconAjax.ajax_url, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // UI更新
+                        document.getElementById('dev_icon_id').value = '';
+                        document.getElementById('dev-icon-preview').innerHTML = '';
+                        removeButton.style.display = 'none';
+                        
+                        console.log('Development icon setting removed');
+                    } else {
+                        alert('Failed to remove icon setting: ' + (data.data || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Remove error:', error);
+                    alert('Failed to remove icon setting');
+                });
             });
         }
     }

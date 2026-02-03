@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.1.4
+ * Version: 1.1.6
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -37,6 +37,9 @@ class Dev_Favicon_Switcher {
 
         // 画像切り抜きAjax handler
         add_action('wp_ajax_dev_favicon_crop_image', array($this, 'ajax_crop_image'));
+    
+        // 開発アイコン削除Ajax handler
+        add_action('wp_ajax_dev_favicon_remove_icon', array($this, 'ajax_remove_icon'));
 
         // インストール済みプラグイン一覧から設定ページにリンク
         add_filter(
@@ -189,7 +192,7 @@ class Dev_Favicon_Switcher {
         
         // 添付ファイル情報の構成
         $attachment = array(
-            'post_title'     => 'dev-favicon-icon',
+            'post_title'     => 'dev-favicon',
             'post_mime_type' => 'image/' . $extension,
             'guid'           => $upload_dir['url'] . '/' . $desired_filename
         );
@@ -225,6 +228,30 @@ class Dev_Favicon_Switcher {
         // レスポンス生成
         $response = wp_prepare_attachment_for_js($new_attachment_id);
         wp_send_json_success($response);
+    }
+
+    /**
+     * 開発アイコン設定削除Ajaxハンドラー
+     */
+    public function ajax_remove_icon() {
+        check_ajax_referer('dev_favicon_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        // 現在の設定を取得
+        $settings = get_option($this->option_name, array());
+        
+        // dev_icon_idのみをクリア（他の設定は保持）
+        $settings['dev_icon_id'] = '';
+        
+        // 設定を更新
+        update_option($this->option_name, $settings);
+        
+        error_log('Dev Favicon: Icon setting removed (image file preserved)');
+        
+        wp_send_json_success(array('message' => 'Icon setting removed'));
     }
 
     public function enqueue_admin_scripts($hook) {
@@ -567,10 +594,19 @@ class Dev_Favicon_Switcher {
     }
     
     public function replace_favicon_url($url) {
+        // 開発環境以外では独自ファビコンの適用処理回避
         if (!$this->is_dev_environment()) {
             return $url;
         }
+
+        // 「設定 > 一般」ページでは適用処理回避（サイトアイコン欄に通常のサイトアイコンを表示）  
+        global $pagenow;
+        if ( is_admin() && $pagenow === 'options-general.php' && !isset($_GET['page']) ) {
+            // ※pageパラメーターがある場合は各プラグイン設定ページなど
+            return $url;
+        }
         
+        // 独自ファビコン未設定なら適用処理回避
         $settings = get_option($this->option_name);
         if (empty($settings['dev_icon_id'])) {
             return $url;
@@ -615,10 +651,12 @@ class Dev_Favicon_Switcher {
     }
     
     public function replace_favicon_meta_tags($meta_tags) {
+        // 開発環境以外では独自ファビコンの適用処理回避
         if (!$this->is_dev_environment()) {
             return $meta_tags;
         }
         
+        // 独自ファビコン未設定なら適用処理回避
         $settings = get_option($this->option_name);
         if (empty($settings['dev_icon_id'])) {
             return $meta_tags;
