@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.0.7
+ * Version: 1.1.0
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -123,9 +123,23 @@ class Dev_Favicon_Switcher {
         }
         
         $attachment_id = absint($_POST['id']);
+        
+        // cropDetailsが存在しない場合はエラー
+        if (empty($_POST['cropDetails'])) {
+            error_log('Dev Favicon: cropDetails is missing from request');
+            wp_send_json_error(array('message' => 'Crop details missing'));
+        }
+        
         $crop_details = json_decode(stripslashes($_POST['cropDetails']), true);
         
-        // 1. クロップ実行：保存先を指定せずWPに任せる（/tmp か uploadsのルートに一時生成される）
+        if (!$crop_details || !isset($crop_details['x1'])) {
+            error_log('Dev Favicon: Failed to parse cropDetails');
+            wp_send_json_error(array('message' => 'Invalid crop details'));
+        }
+        
+        error_log('Dev Favicon: Cropping with details - ' . print_r($crop_details, true));
+        
+        // クロップ実行
         $cropped = wp_crop_image(
             $attachment_id,
             (int) $crop_details['x1'],
@@ -137,33 +151,34 @@ class Dev_Favicon_Switcher {
         );
         
         if (is_wp_error($cropped)) {
+            error_log('Dev Favicon: Crop failed - ' . $cropped->get_error_message());
             wp_send_json_error(array('message' => $cropped->get_error_message()));
         }
-
-        // 2. 添付ファイル情報の構成
-        // post_content や guid を独自に指定しないのがコツです
+        
+        // 添付ファイル情報の構成
         $attachment = array(
             'post_title'     => 'dev-favicon-icon',
             'post_mime_type' => 'image/png',
         );
         
-        // 3. メディアライブラリに正規のパスで挿入
-        // wp_insert_attachment は、ファイルをuploadsの年月フォルダに移動させ、DBを整えてくれます
+        // メディアライブラリに挿入
         $new_attachment_id = wp_insert_attachment($attachment, $cropped);
         
         if (is_wp_error($new_attachment_id)) {
-            @unlink($cropped); // 失敗したら一時ファイルを削除
+            @unlink($cropped);
             wp_send_json_error(array('message' => $new_attachment_id->get_error_message()));
         }
         
-        // 4. メタデータの生成・更新
+        // メタデータの生成・更新
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         wp_update_attachment_metadata(
             $new_attachment_id, 
             wp_generate_attachment_metadata($new_attachment_id, $cropped)
         );
         
-        // 5. レスポンス生成
+        error_log('Dev Favicon: Crop successful - ID: ' . $new_attachment_id);
+        
+        // レスポンス生成
         $response = wp_prepare_attachment_for_js($new_attachment_id);
         wp_send_json_success($response);
     }

@@ -51,10 +51,38 @@
                 return;
             }
             
-            // Create media frame with cropper
+            // カスタムCropperコントローラーを作成（WordPress標準のアクションを上書き）
+            const DevFaviconCropper = wp.media.controller.Cropper.extend({
+                doCrop: function(attachment) {
+                    console.log('=== CUSTOM doCrop CALLED ===');
+                    
+                    const cropDetails = attachment.get('cropDetails');
+                    const cropNonce = devFaviconAjax.crop_nonce;
+                    
+                    console.log('Crop details:', cropDetails);
+                    
+                    // カスタムAjaxリクエスト
+                    wp.ajax.post('dev_favicon_crop_image', {
+                        nonce: cropNonce,
+                        id: attachment.get('id'),
+                        cropDetails: JSON.stringify(cropDetails)
+                    })
+                    .done(function(attachmentData) {
+                        console.log('Crop successful:', attachmentData);
+                        setDevIcon(attachmentData.id, attachmentData.url);
+                        iconCropperFrame.close();
+                    })
+                    .fail(function(error) {
+                        console.error('Crop failed:', error);
+                        alert('Crop error: ' + (error.message || error || 'Unknown error'));
+                    });
+                }
+            });
+            
+            // Create media frame with custom cropper
             iconCropperFrame = wp.media({
                 button: {
-                    text: 'Select and Crop',
+                    text: 'Crop Image',
                     close: false
                 },
                 states: [
@@ -67,7 +95,7 @@
                         suggestedWidth: 512,
                         suggestedHeight: 512
                     }),
-                    new wp.media.controller.CustomizeImageCropper({
+                    new DevFaviconCropper({
                         imgSelectOptions: calculateImageSelectOptions,
                         control: {
                             id: 'dev-favicon-control',
@@ -87,18 +115,15 @@
                 const selection = iconCropperFrame.state().get('selection');
                 const attachment = selection.first().toJSON();
                 
+                console.log('Image selected:', attachment);
+                
                 // Proceed to crop state
                 iconCropperFrame.setState('cropper');
             });
             
-            // When cropping is complete
-            iconCropperFrame.on('cropped', function(croppedImage) {
-                // Custom crop handler
-                handleCrop(croppedImage);
-            });
-            
             // When user skips cropping
             iconCropperFrame.on('skippedcrop', function() {
+                console.log('Crop skipped');
                 const selection = iconCropperFrame.state().get('selection');
                 const attachment = selection.first().toJSON();
                 setDevIcon(attachment.id, attachment.url);
@@ -108,38 +133,10 @@
             iconCropperFrame.open();
         });
         
-        // Handle crop with custom Ajax
-        function handleCrop(croppedImage) {
-            const cropperState = iconCropperFrame.state('cropper');
-            const attachment = cropperState.get('selection').first();
-            const cropDetails = cropperState.get('cropDetails');
-            const cropNonce = devFaviconAjax.crop_nonce;
-
-            // fetchの代わりに、WordPress標準のwp.ajaxを使うとより安全です
-            wp.ajax.send('dev_favicon_crop_image', {
-                data: {
-                    nonce: cropNonce,
-                    id: attachment.get('id'),
-                    cropDetails: JSON.stringify(cropDetails)
-                },
-                success: function(attachmentData) {
-                    // attachmentData は PHP側の wp_prepare_attachment_for_js の結果
-                    setDevIcon(attachmentData.id, attachmentData.url);
-                    
-                    // 処理が完了したことを通知してフレームを閉じる
-                    iconCropperFrame.setState('library'); // 状態を戻す
-                    iconCropperFrame.close();
-                },
-                error: function(errorMessage) {
-                    alert('Crop error: ' + (errorMessage || 'Unknown error'));
-                    // エラー時もボタンを戻す必要があるため、一度閉じるか状態をリセット
-                    iconCropperFrame.close();
-                }
-            });
-        }
-        
         // Helper function to set dev icon
         function setDevIcon(attachmentId, attachmentUrl) {
+            console.log('Setting dev icon:', attachmentId, attachmentUrl);
+            
             document.getElementById('dev_icon_id').value = attachmentId;
             
             const preview = document.getElementById('dev-icon-preview');
