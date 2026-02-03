@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.1.0
+ * Version: 1.1.4
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -139,7 +139,13 @@ class Dev_Favicon_Switcher {
         
         error_log('Dev Favicon: Cropping with details - ' . print_r($crop_details, true));
         
-        // クロップ実行
+        // 元画像の情報を取得
+        $original_file = get_attached_file($attachment_id);
+        $original_basename = basename($original_file);
+        $original_name = pathinfo($original_basename, PATHINFO_FILENAME);
+        $extension = pathinfo($original_basename, PATHINFO_EXTENSION);
+        
+        // クロップ実行（一時ファイルとして生成）
         $cropped = wp_crop_image(
             $attachment_id,
             (int) $crop_details['x1'],
@@ -155,17 +161,44 @@ class Dev_Favicon_Switcher {
             wp_send_json_error(array('message' => $cropped->get_error_message()));
         }
         
+        // アップロードディレクトリの情報を取得
+        $upload_dir = wp_upload_dir();
+        
+        // 希望するファイル名を生成（croppedプレフィックス付き、番号なし）
+        $desired_filename = 'cropped-' . $original_name . '.' . $extension;
+        $target_path = $upload_dir['path'] . '/' . $desired_filename;
+        
+        // 既存ファイルがあれば削除（同じ画像で何度もクロップする場合を想定）
+        if (file_exists($target_path)) {
+            // 古いメディアライブラリエントリーも削除
+            global $wpdb;
+            $old_attachment = $wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE guid LIKE %s",
+                '%' . $desired_filename
+            ));
+            if ($old_attachment) {
+                wp_delete_attachment($old_attachment, true);
+            }
+        }
+        
+        // 一時ファイルを目的の場所に移動（リネーム）
+        if (!@rename($cropped, $target_path)) {
+            @unlink($cropped);
+            wp_send_json_error(array('message' => 'Failed to move cropped file'));
+        }
+        
         // 添付ファイル情報の構成
         $attachment = array(
             'post_title'     => 'dev-favicon-icon',
-            'post_mime_type' => 'image/png',
+            'post_mime_type' => 'image/' . $extension,
+            'guid'           => $upload_dir['url'] . '/' . $desired_filename
         );
         
-        // メディアライブラリに挿入
-        $new_attachment_id = wp_insert_attachment($attachment, $cropped);
+        // メディアライブラリに登録（ファイルは既に正しい場所にある）
+        $new_attachment_id = wp_insert_attachment($attachment, $target_path);
         
         if (is_wp_error($new_attachment_id)) {
-            @unlink($cropped);
+            @unlink($target_path);
             wp_send_json_error(array('message' => $new_attachment_id->get_error_message()));
         }
         
@@ -173,10 +206,21 @@ class Dev_Favicon_Switcher {
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         wp_update_attachment_metadata(
             $new_attachment_id, 
-            wp_generate_attachment_metadata($new_attachment_id, $cropped)
+            wp_generate_attachment_metadata($new_attachment_id, $target_path)
         );
         
-        error_log('Dev Favicon: Crop successful - ID: ' . $new_attachment_id);
+        // ファビコン専用サイズを生成（これが抜けていた！）
+        $settings = get_option($this->option_name);
+        $custom_sizes = !empty($settings['custom_sizes']) ? $settings['custom_sizes'] : '';
+        $result = $this->generate_icon_sizes($new_attachment_id, $custom_sizes);
+        
+        if (is_wp_error($result)) {
+            error_log('Dev Favicon: Failed to generate sizes - ' . $result->get_error_message());
+        } else {
+            error_log('Dev Favicon: Generated sizes - ' . print_r($result, true));
+        }
+        
+        error_log('Dev Favicon: Crop successful - ID: ' . $new_attachment_id . ', File: ' . $desired_filename);
         
         // レスポンス生成
         $response = wp_prepare_attachment_for_js($new_attachment_id);
@@ -378,8 +422,11 @@ class Dev_Favicon_Switcher {
         $missing_sizes = array();
         $existing_sizes = array();
         
+        $path_parts = pathinfo($file_path);
+        
         foreach ($this->required_sizes as $size) {
-            $sized_file = str_replace('.png', '-' . $size . 'x' . $size . '.png', $file_path);
+            $sized_file = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'];
+            
             if (file_exists($sized_file)) {
                 $existing_sizes[] = $size;
             } else {
@@ -422,11 +469,6 @@ class Dev_Favicon_Switcher {
             return new WP_Error('file_not_found', 'Icon file not found');
         }
         
-        $image = wp_get_image_editor($file_path);
-        if (is_wp_error($image)) {
-            return $image;
-        }
-        
         // 基本サイズ + カスタムサイズ
         $sizes = $this->required_sizes;
         
@@ -444,23 +486,45 @@ class Dev_Favicon_Switcher {
         $skipped = array();
         $errors = array();
         
+        $prod_extension = pathinfo($file_path, PATHINFO_EXTENSION);
+        
         foreach ($sizes as $size) {
-            $sized_file = str_replace('.png', '-' . $size . 'x' . $size . '.png', $file_path);
+            // ファイル名の最後の拡張子のみを置換（より安全）
+            $path_parts = pathinfo($file_path);
+            $sized_file = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'];
             
             if (file_exists($sized_file)) {
                 $skipped[] = $size;
                 continue;
             }
             
-            $image_copy = clone $image;
-            $image_copy->resize($size, $size, true);
-            $saved = $image_copy->save($sized_file);
+            // 毎回新しいエディターインスタンスを作成（重要！）
+            $image = wp_get_image_editor($file_path);
+            
+            if (is_wp_error($image)) {
+                $errors[] = sprintf('Size %dx%d: %s', $size, $size, $image->get_error_message());
+                continue;
+            }
+            
+            // リサイズ
+            $resize_result = $image->resize($size, $size, true);
+            
+            if (is_wp_error($resize_result)) {
+                $errors[] = sprintf('Size %dx%d: %s', $size, $size, $resize_result->get_error_message());
+                continue;
+            }
+            
+            // 保存
+            $saved = $image->save($sized_file);
             
             if (is_wp_error($saved)) {
                 $errors[] = sprintf('Size %dx%d: %s', $size, $size, $saved->get_error_message());
             } else {
                 $generated[] = $size;
             }
+            
+            // メモリ解放（念のため）
+            unset($image);
         }
         
         return array(
@@ -512,32 +576,39 @@ class Dev_Favicon_Switcher {
             return $url;
         }
         
-        // 本番アイコンのファイル名を取得
-        $prod_filename = basename($url);
-        $prod_filename_base = preg_replace('/(-\d+x\d+)?\.png$/', '', $prod_filename);
-        
         // 開発アイコンのURLとファイル名を取得
         $dev_icon_url = wp_get_attachment_image_url($settings['dev_icon_id'], 'full');
         if (!$dev_icon_url) {
             return $url;
         }
         
-        $dev_filename = basename($dev_icon_url);
-        $dev_filename_base = preg_replace('/\.png$/', '', $dev_filename);
+        // 本番アイコンのファイル名と拡張子を取得
+        $prod_filename = basename($url);
+        $prod_extension = pathinfo($prod_filename, PATHINFO_EXTENSION);
+        $prod_filename_base = preg_replace('/(-\d+x\d+)?\.' . preg_quote($prod_extension, '/') . '$/', '', $prod_filename);
         
-        // URLのファイル名部分を置換（サイズsuffixは保持）
+        // 開発アイコンのファイル名と拡張子を取得
+        $dev_filename = basename($dev_icon_url);
+        $dev_extension = pathinfo($dev_filename, PATHINFO_EXTENSION);
+        $dev_filename_base = preg_replace('/\.' . preg_quote($dev_extension, '/') . '$/', '', $dev_filename);
+        
+        // URLのファイル名部分を置換（サイズsuffixは保持、拡張子も動的に対応）
         $url = preg_replace(
-            '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.png#',
-            '/' . $dev_filename_base . '$1.png',
+            '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.' . preg_quote($prod_extension, '#') . '#',
+            '/' . $dev_filename_base . '$1.' . $dev_extension,
             $url
         );
         
         // パスも置換（年月フォルダが異なる場合に対応）
-        $prod_path = dirname(parse_url(wp_get_attachment_url(get_option('site_icon')), PHP_URL_PATH));
-        $dev_path = dirname(parse_url($dev_icon_url, PHP_URL_PATH));
-        
-        if ($prod_path !== $dev_path) {
-            $url = str_replace($prod_path, $dev_path, $url);
+        $prod_icon_id = get_option('site_icon');
+        if ($prod_icon_id) {
+            $prod_icon_url = wp_get_attachment_url($prod_icon_id);
+            $prod_path = dirname(parse_url($prod_icon_url, PHP_URL_PATH));
+            $dev_path = dirname(parse_url($dev_icon_url, PHP_URL_PATH));
+            
+            if ($prod_path !== $dev_path) {
+                $url = str_replace($prod_path, $dev_path, $url);
+            }
         }
         
         return $url;
@@ -558,25 +629,29 @@ class Dev_Favicon_Switcher {
             return $meta_tags;
         }
         
-        // 本番アイコンのパスとファイル名を取得
+        // 本番アイコンの情報を取得
         $prod_icon_id = get_option('site_icon');
         if (!$prod_icon_id) {
             return $meta_tags;
         }
         
         $prod_icon_url = wp_get_attachment_url($prod_icon_id);
-        $prod_filename_base = preg_replace('/\.png$/', '', basename($prod_icon_url));
+        $prod_filename = basename($prod_icon_url);
+        $prod_extension = pathinfo($prod_filename, PATHINFO_EXTENSION);
+        $prod_filename_base = preg_replace('/\.' . preg_quote($prod_extension, '/') . '$/', '', $prod_filename);
         $prod_path = dirname(parse_url($prod_icon_url, PHP_URL_PATH));
         
         // 開発アイコンの情報
-        $dev_filename_base = preg_replace('/\.png$/', '', basename($dev_icon_url));
+        $dev_filename = basename($dev_icon_url);
+        $dev_extension = pathinfo($dev_filename, PATHINFO_EXTENSION);
+        $dev_filename_base = preg_replace('/\.' . preg_quote($dev_extension, '/') . '$/', '', $dev_filename);
         $dev_path = dirname(parse_url($dev_icon_url, PHP_URL_PATH));
         
         foreach ($meta_tags as &$tag) {
-            // ファイル名を置換
+            // ファイル名を置換（拡張子も動的に対応）
             $tag = preg_replace(
-                '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.png#',
-                '/' . $dev_filename_base . '$1.png',
+                '#/' . preg_quote($prod_filename_base, '#') . '(-\d+x\d+)?\.' . preg_quote($prod_extension, '#') . '#',
+                '/' . $dev_filename_base . '$1.' . $dev_extension,
                 $tag
             );
             
