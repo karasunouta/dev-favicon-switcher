@@ -3,7 +3,7 @@
  * Plugin Name: Karasunouta Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.1.6
+ * Version: 1.2.0
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 
 class Dev_Favicon_Switcher {
     
-    private $option_name = 'karasunouta_dev_favicon_switcher_settings';
+    private $option_name = 'ku_df_switcher_settings';
     private $required_sizes = array(32, 180, 192, 270);
     private $slug = 'ku-df-switcher';   // テキストドメインと統一。多言語対応関数内ではベタ書き必須
     
@@ -30,10 +30,16 @@ class Dev_Favicon_Switcher {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+    
+        // 設定を取得してenabledチェック
+        $settings = get_option($this->option_name, array('enabled' => '1'));
+        $is_enabled = !empty($settings['enabled']) && $settings['enabled'] === '1';
         
-        // Frontend filters
-        add_filter('get_site_icon_url', array($this, 'replace_favicon_url'), 10, 1);
-        add_filter('site_icon_meta_tags', array($this, 'replace_favicon_meta_tags'), 10, 1);
+        // Frontend filters（enabledの場合のみ）
+        if ($is_enabled) {
+            add_filter('get_site_icon_url', array($this, 'replace_favicon_url'), 10, 1);
+            add_filter('site_icon_meta_tags', array($this, 'replace_favicon_meta_tags'), 10, 1);
+        }
 
         // 画像切り抜きAjax handler
         add_action('wp_ajax_dev_favicon_crop_image', array($this, 'ajax_crop_image'));
@@ -46,6 +52,9 @@ class Dev_Favicon_Switcher {
             'plugin_action_links_' . plugin_basename(__FILE__),
             [$this, 'add_settings_link']
         );
+
+        // プラグイン有効化時のリダイレクト
+        add_action('activated_plugin', array($this, 'redirect_after_activation'));
     }
     
     public function add_settings_page() {
@@ -68,6 +77,9 @@ class Dev_Favicon_Switcher {
     
     public function sanitize_settings($input) {
         $sanitized = array();
+    
+        // Enabled/Disabled
+        $sanitized['enabled'] = !empty($input['enabled']) ? '1' : '0';
         
         // Dev icon ID
         $sanitized['dev_icon_id'] = !empty($input['dev_icon_id']) ? absint($input['dev_icon_id']) : '';
@@ -294,6 +306,7 @@ class Dev_Favicon_Switcher {
     
     public function render_settings_page() {
         $settings = get_option($this->option_name, array(
+            'enabled' => '1',
             'dev_icon_id' => '',
             'dev_urls' => '',
             'auto_detect' => '1',
@@ -320,6 +333,25 @@ class Dev_Favicon_Switcher {
                 <?php settings_fields('dev_favicon_settings_group'); ?>
                 
                 <table class="form-table">
+                    <!-- Enable/Disable Switch (一番上に配置) -->
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Plugin Status', 'ku-df-switcher'); ?>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" 
+                                    name="<?php echo $this->option_name; ?>[enabled]" 
+                                    value="1" 
+                                    <?php checked($settings['enabled'], '1'); ?>>
+                                <strong><?php _e('Enable development favicon switching', 'ku-df-switcher'); ?></strong>
+                            </label>
+                            <p class="description">
+                                <?php _e('Uncheck this to temporarily disable favicon switching without losing your settings. Useful for testing or presentations.', 'ku-df-switcher'); ?>
+                            </p>
+                        </td>
+                    </tr>
+
                     <!-- Production Icon (Read-only) -->
                     <tr>
                         <th scope="row">
@@ -565,6 +597,11 @@ class Dev_Favicon_Switcher {
         if (!$settings) {
             $settings = get_option($this->option_name);
         }
+    
+        // プラグインが無効化されている場合は常にfalse
+        if (empty($settings['enabled']) || $settings['enabled'] !== '1') {
+            return false;
+        }
         
         $current_url = home_url();
         
@@ -701,7 +738,48 @@ class Dev_Favicon_Switcher {
         
         return $meta_tags;
     }
+
+    /**
+     * プラグイン有効化後に設定ページへリダイレクト（初回のみ）
+     */
+    public function redirect_after_activation($plugin) {
+        if ($plugin === plugin_basename(__FILE__)) {
+            // 複数プラグイン一括有効化の場合はリダイレクトしない
+            if (isset($_GET['activate-multi'])) {
+                return;
+            }
+            
+            // 初回有効化フラグをチェック
+            $is_first_activation = get_transient('ku_df_switcher_first_activation');
+            
+            if ($is_first_activation) {
+                // 転送フラグトランジェントを削除（直後に無効化→有効化処理が行われても再度リダイレクトはしない）
+                delete_transient('ku_df_switcher_first_activation');
+    
+                // 初回セットアップ完了判定用フラグをセット（次回トランジェントの生成抑止）
+                update_option('ku_df_switcher_setup_completed', true);
+                
+                // 設定ページのURLを構成
+                $redirect_url = admin_url('options-general.php?page=' . $this->slug);
+                
+                // リダイレクト実行
+                wp_safe_redirect($redirect_url);
+                exit;
+            }
+        }
+    }
 }
+
+// プラグイン有効化フック
+register_activation_hook(__FILE__, function() {
+    // 初回セットアップ完了判定用フラグをチェック
+    $setup_completed = get_option('ku_df_switcher_setup_completed');
+    
+    if (!$setup_completed) {
+        // 初回のみ転送フラグトランジェントをセット（60秒間有効）
+        set_transient('ku_df_switcher_first_activation', true, 60);
+    }
+});
 
 // Initialize plugin
 new Dev_Favicon_Switcher();
