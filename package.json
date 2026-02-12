@@ -1,13 +1,29 @@
 {
   "name": "karasunouta-dev-favicon-switcher",
   "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "wp-scripts build",
     "start": "wp-scripts start",
+    "format": "wp-scripts format",
+    "lint:css": "wp-scripts lint-style",
+    "lint:js": "wp-scripts lint-js",
+    "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
     "plugin-export": "npm run build && npm run plugin-zip"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://karasunouta@github.com/karasunouta/karasunouta-dev-favicon-switcher.git"
+  },
+  "keywords": [],
   "author": "karasunouta",
+  "bugs": {
+    "url": "https://github.com/karasunouta/karasunouta-dev-favicon-switcher/issues"
+  },
+  "homepage": "https://github.com/karasunouta/karasunouta-dev-favicon-switcher#readme",
   "devDependencies": {
     "@wordpress/scripts": "^31.3.0"
   }

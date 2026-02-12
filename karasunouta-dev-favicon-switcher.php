@@ -21,6 +21,11 @@ if (!defined('ABSPATH')) {
 }
 
 class Dev_Favicon_Switcher {
+
+	/**
+	 * プラグインバージョン
+	 */
+	const VERSION = '1.2.0';
     
     private $option_name = 'ku_df_switcher_settings';
     private $required_sizes = array(32, 180, 192, 270);
@@ -742,28 +747,28 @@ class Dev_Favicon_Switcher {
     /**
      * プラグイン有効化後に設定ページへリダイレクト（初回のみ）
      */
-    public function redirect_after_activation($plugin) {
-        if ($plugin === plugin_basename(__FILE__)) {
+    public function redirect_after_activation( $plugin ) {
+        if ( $plugin === plugin_basename( __FILE__ ) ) {
             // 複数プラグイン一括有効化の場合はリダイレクトしない
-            if (isset($_GET['activate-multi'])) {
+            if ( isset( $_GET['activate-multi'] ) ) {
                 return;
             }
-            
+        
             // 初回有効化フラグをチェック
-            $is_first_activation = get_transient('ku_df_switcher_first_activation');
-            
+            $is_first_activation = get_transient( "{$this->slug}_first_activation" );
+        
             if ($is_first_activation) {
                 // 転送フラグトランジェントを削除（直後に無効化→有効化処理が行われても再度リダイレクトはしない）
-                delete_transient('ku_df_switcher_first_activation');
-    
-                // 初回セットアップ完了判定用フラグをセット（次回トランジェントの生成抑止）
-                update_option('ku_df_switcher_setup_completed', true);
-                
+                delete_transient( "{$this->slug}_first_activation" );
+
+                // 初回セットアップ完了フラグをセット（次回トランジェントの生成抑止）
+                update_option( "{$this->slug}_setup_completed" , true);
+            
                 // 設定ページのURLを構成
-                $redirect_url = admin_url('options-general.php?page=' . $this->slug);
-                
+                $redirect_url = admin_url( "options-general.php?page={$this->slug}" );
+            
                 // リダイレクト実行
-                wp_safe_redirect($redirect_url);
+                wp_safe_redirect( $redirect_url );
                 exit;
             }
         }
@@ -771,13 +776,13 @@ class Dev_Favicon_Switcher {
 }
 
 // プラグイン有効化フック
-register_activation_hook(__FILE__, function() {
-    // 初回セットアップ完了判定用フラグをチェック
-    $setup_completed = get_option('ku_df_switcher_setup_completed');
-    
-    if (!$setup_completed) {
+register_activation_hook( __FILE__, function() {
+    // 初回セットアップ完了フラグをチェック
+    $setup_completed = get_option( "{$this->slug}_setup_completed" );
+   
+    if ( ! $setup_completed ) {
         // 初回のみ転送フラグトランジェントをセット（60秒間有効）
-        set_transient('ku_df_switcher_first_activation', true, 60);
+        set_transient( "{$this->slug}_first_activation", true, 60 );
     }
 });
 
