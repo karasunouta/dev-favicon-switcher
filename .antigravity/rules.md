@@ -12,6 +12,14 @@
   - `/vendor/**` : Directory structure only.
   - `*.log` : Do not read unless explicitly asked.
   - `/.git/**` : Completely ignore.
+  - `package-lock.json` : Do not read unless explicitly asked.
+  - `package.json` : Do not read unless explicitly asked.
+  - `build/**` : Do not read unless explicitly asked.
+  - `*.zip` : Do not read unless explicitly asked.
+  - `*.pot` : Do not read unless explicitly asked.
+  - `*.po` : Do not read unless explicitly asked.
+  - `*.mo` : Do not read unless explicitly asked.
+
 - **PRIORITIZE:**
   - `dev-favicon-switcher.php` (Entry point)
   - `/src/**` (Core logic)

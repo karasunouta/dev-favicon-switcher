@@ -4,5 +4,5 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 // 設定削除
-delete_option('ku_df_switcher_settings');
-delete_option('ku_df_switcher_setup_completed');
+delete_option('dev_favicon_switcher_settings');
+delete_option('dev_favicon_switcher_setup_completed');
