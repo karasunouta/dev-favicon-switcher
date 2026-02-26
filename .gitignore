@@ -1,3 +1,10 @@
+# Node modules
 node_modules/
-build/
+
+# Source maps (development only)
+build/*.map
+
+# その他の開発用ファイル
+.DS_Store
+*.log
 *.zip

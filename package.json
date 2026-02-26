@@ -1,5 +1,5 @@
 {
-  "name": "karasunouta-dev-favicon-switcher",
+  "name": "dev-favicon-switcher",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -16,14 +16,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://karasunouta@github.com/karasunouta/karasunouta-dev-favicon-switcher.git"
+    "url": "git+https://karasunouta@github.com/karasunouta/dev-favicon-switcher.git"
   },
   "keywords": [],
   "author": "karasunouta",
   "bugs": {
-    "url": "https://github.com/karasunouta/karasunouta-dev-favicon-switcher/issues"
+    "url": "https://github.com/karasunouta/dev-favicon-switcher/issues"
   },
-  "homepage": "https://github.com/karasunouta/karasunouta-dev-favicon-switcher#readme",
+  "homepage": "https://github.com/karasunouta/dev-favicon-switcher#readme",
   "devDependencies": {
     "@wordpress/scripts": "^31.3.0"
   }
