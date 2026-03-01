@@ -1,7 +1,10 @@
 /**
  * Dev Favicon Switcher - Admin JavaScript
- * Vanilla JavaScript (no jQuery dependency)
  */
+
+import 'media-views';
+import 'customize-controls';
+import './admin.css';
 
 (function() {
     'use strict';
@@ -45,10 +48,10 @@
         selectButton.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Reopen if already exists
+            // WP Coreの `site-icon.js` の実装に倣い、毎回フレームを再構築することで
+            // その後のキャンセルや状態遷移時のバグを完全に回避（クロップ段階で中止して再試行した際の混乱を回避）
             if (iconCropperFrame) {
-                iconCropperFrame.open();
-                return;
+                iconCropperFrame.remove();
             }
             
             // カスタムCropperコントローラーを作成（WordPress標準のアクションを上書き）

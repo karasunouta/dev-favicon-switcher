@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon between production and development environments
- * Version: 1.3.1
+ * Version: 1.3.2
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,17 +27,17 @@ class Dev_Favicon_Switcher
     /**
      * プラグインバージョン
      */
-    const VERSION = '1.3.1';
+    const VERSION = '1.3.2';
 
     private $option_name = 'dev_favicon_switcher_settings';
     private $required_sizes = array(32, 180, 192, 270);
-    private $slug = 'dev-favicon-switcher';
+    private $page_slug = 'dev-favicon-switcher';
 
     public function __construct()
     {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
 
         // 設定を取得してenabledチェック
         $settings = get_option($this->option_name, array('enabled' => '1'));
@@ -71,7 +71,7 @@ class Dev_Favicon_Switcher
             __('Dev Favicon Switcher', 'dev-favicon-switcher'),
             __('Dev Favicon', 'dev-favicon-switcher'),
             'manage_options',
-            $this->slug,
+            $this->page_slug,
             array($this, 'render_settings_page')
         );
     }
@@ -130,7 +130,7 @@ class Dev_Favicon_Switcher
      */
     public function add_settings_link(array $links): array
     {
-        $settings_url = admin_url("admin.php?page={$this->slug}");
+        $settings_url = admin_url("admin.php?page={$this->page_slug}");
 
         $settings_link = '<a href="' . esc_url($settings_url) . '">' . __('Settings') . '</a>';
 
@@ -282,43 +282,63 @@ class Dev_Favicon_Switcher
         wp_send_json_success(array('message' => 'Icon setting removed'));
     }
 
-    public function enqueue_admin_scripts($hook)
+    public function admin_enqueue_scripts($hook)
     {
-        if ($hook !== "settings_page_{$this->slug}") {
+        if ($hook !== "settings_page_{$this->page_slug}") {
             return;
         }
 
+
+
+
+        // パスの整理
+        $entry_point = 'admin';
+        $asset_path = plugin_dir_path( __FILE__ ) . "build/{$entry_point}.asset.php";
+        $script_url = plugins_url( "/build/{$entry_point}.js", __FILE__ );
+        $style_url  = plugins_url( "/build/{$entry_point}.css", __FILE__ );
+        $style_path = plugin_dir_path( __FILE__ ) . "build/{$entry_point}.css";
+        //$languages_path = plugin_dir_path(__FILE__) . 'languages';
+
+        // ビルド済みファイルが存在するかチェック
+        if ( ! file_exists( $asset_path) ) {
+            return;
+        }
+        $assets = include( $asset_path);
+
         // WordPress標準のメディアライブラリとクロッパー
         wp_enqueue_media();
-        wp_enqueue_script('media-views');
-        wp_enqueue_script('customize-controls');
 
-        // ビルドされたJSファイルを読み込み
-        $asset_file = include plugin_dir_path(__FILE__) . 'build/index.asset.php';
-
+        // 管理画面用JS
+        $script_handle = 'dev-favicon-admin';
         wp_enqueue_script(
-            'dev-favicon-admin',
-            plugins_url('build/index.js', __FILE__),
-            array_merge($asset_file['dependencies'], array('media-views', 'customize-controls')),
-            $asset_file['version'],
-            true
+            $script_handle,
+            $script_url,
+            $assets['dependencies'],
+            $assets['version'],
+            true // フッターで読み込み
         );
 
+        // 翻訳の読み込み
+        //wp_set_script_translations( $script_handle, 'dev-favicon-switcher', $languages_path );
+
+        // JS変数のセット
         wp_localize_script('dev-favicon-admin', 'devFaviconAjax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('dev_favicon_nonce'),
-            'crop_nonce' => wp_create_nonce('dev-favicon-crop') // この行を追加
+            'crop_nonce' => wp_create_nonce('dev-favicon-crop')
         ));
 
-        // Customizer用のスタイル
-        wp_enqueue_style('customize-controls');
+        // 管理画面用CSS
+        if ( file_exists( $style_path ) ) {
+            wp_enqueue_style(
+                'dev-favicon-admin-style',
+                $style_url,
+                array('customize-controls'), // 依存先CSS（WPコアのCustomizer用スタイル）
+                $assets['version'] // スクリプトと同じバージョン管理を適用
+            );
+        }
 
-        wp_enqueue_style(
-            'dev-favicon-admin',
-            plugins_url('assets/css/admin.css', __FILE__),
-            array(),
-            '1.0.0'
-        );
+        // 上掲のソースを採用したい。returnから下は削除を予定
     }
 
     public function render_settings_page()
@@ -791,7 +811,7 @@ class Dev_Favicon_Switcher
                 update_option('dev-favicon-switcher_setup_completed', true);
 
                 // 設定ページのURLを構成
-                $redirect_url = admin_url("options-general.php?page={$this->slug}");
+                $redirect_url = admin_url("options-general.php?page={$this->page_slug}");
 
                 // リダイレクト実行
                 wp_safe_redirect($redirect_url);
