@@ -58,7 +58,7 @@ class Dev_Favicon_Switcher
         // インストール済みプラグイン一覧から設定ページにリンク
         add_filter(
             'plugin_action_links_' . plugin_basename(__FILE__),
-        [$this, 'add_settings_link']
+            [$this, 'add_settings_link']
         );
 
         // プラグイン有効化時のリダイレクト
