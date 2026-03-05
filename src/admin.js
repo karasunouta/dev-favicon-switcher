@@ -2,8 +2,9 @@
  * Dev Favicon Switcher - Admin JavaScript
  */
 
-import 'media-views';
 import 'customize-controls';
+import 'media-views';
+import { __, sprintf } from '@wordpress/i18n';
 import './admin.css';
 
 (function() {
@@ -307,7 +308,12 @@ import './admin.css';
         const hostname = window.location.hostname;
         if (hostname.includes('.local') || hostname.includes('.test') || hostname.includes('.dev')) {
             const suggestedUrl = window.location.protocol + '//' + hostname + '/';
-            devUrlTextarea.setAttribute('placeholder', 'e.g., ' + suggestedUrl);
+
+            /* translators: %s: URL like "user-domain.local". */
+            const placeholderTemplate = __('e.g., %s', 'dev-favicon-switcher');
+            const placeholder = sprintf(placeholderTemplate, suggestedUrl);
+
+            devUrlTextarea.setAttribute('placeholder', placeholder);
         }
     }
     
