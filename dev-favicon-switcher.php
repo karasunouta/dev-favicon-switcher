@@ -105,10 +105,26 @@ class Dev_Favicon_Switcher {
 		// Dev URLs (textarea, one per line)
 		$sanitized['dev_urls'] = ! empty( $input['dev_urls'] ) ? sanitize_textarea_field( $input['dev_urls'] ) : '';
 
+		// 古い設定値を取得
+		$old_settings = get_option( $this->option_name, array() );
+		$old_icon_id  = ! empty( $old_settings['dev_icon_id'] ) ? $old_settings['dev_icon_id'] : '';
+
 		// Development iconが設定されている場合、必要なサイズを自動生成
 		if ( ! empty( $sanitized['dev_icon_id'] ) ) {
+			// 新しいIDが設定された場合、それが plugin 専用フォルダ内でタイムスタンプ付きのコピーかを確認
+			if ( $sanitized['dev_icon_id'] != $old_icon_id ) {
+				$cloned_id = $this->ensure_timestamped_clone( $sanitized['dev_icon_id'] );
+				if ( $cloned_id ) {
+					$sanitized['dev_icon_id'] = $cloned_id;
+				}
+			}
+
 			$this->generate_icon_sizes( $sanitized['dev_icon_id'] );
 		}
+
+		// ガベージコレクションを実行：現在アクティブなアイコン以外の過去ファイルを一掃する
+		$active_id = ! empty( $sanitized['dev_icon_id'] ) ? $sanitized['dev_icon_id'] : 0;
+		$this->cleanup_unused_dev_icons( $active_id );
 
 		return $sanitized;
 	}
@@ -176,39 +192,35 @@ class Dev_Favicon_Switcher {
 			wp_send_json_error( array( 'message' => $cropped->get_error_message() ) );
 		}
 
-		// アップロードディレクトリの情報を取得
+		// アップロードディレクトリ情報の取得と専用フォルダ確保
 		$upload_dir = wp_upload_dir();
-
-		// 希望するファイル名を生成（croppedプレフィックス付き、番号なし）
-		$desired_filename = 'cropped-' . $original_name . '.' . $extension;
-		$target_path      = $upload_dir['path'] . '/' . $desired_filename;
-
-		// 既存ファイルがあれば削除（同じ画像で何度もクロップする場合を想定）
-		if ( file_exists( $target_path ) ) {
-			// 古いメディアライブラリエントリーも削除
-			global $wpdb;
-			$old_attachment = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT ID FROM {$wpdb->posts} WHERE guid LIKE %s",
-					'%' . $desired_filename
-				)
-			);
-			if ( $old_attachment ) {
-				wp_delete_attachment( $old_attachment, true );
+		$target_dir = $upload_dir['basedir'] . '/dev-favicon-switcher';
+		if ( ! file_exists( $target_dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $target_dir );
+			} else {
+				@mkdir( $target_dir, 0755, true );
 			}
 		}
 
-		// 一時ファイルを目的の場所に移動（リネーム）
+		// 希望するファイル名を生成（croppedプレフィックス + タイムスタンプ付与）
+		$timestamp        = time();
+		$desired_filename = 'cropped-' . $original_name . '-' . $timestamp . '.' . $extension;
+		$target_path      = $target_dir . '/' . $desired_filename;
+
+		// 一時ファイルを目的の場所（専用フォルダ）に移動
 		if ( ! @rename( $cropped, $target_path ) ) {
 			@unlink( $cropped );
 			wp_send_json_error( array( 'message' => 'Failed to move cropped file' ) );
 		}
 
+		// 古い同名ファイルがあれば（実質ないはずだが念のため）削除処理を省略
+
 		// 添付ファイル情報の構成
 		$attachment = array(
 			'post_title'     => 'dev-favicon',
 			'post_mime_type' => 'image/' . $extension,
-			'guid'           => $upload_dir['url'] . '/' . $desired_filename,
+			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/' . $desired_filename,
 		);
 
 		// メディアライブラリに登録（ファイルは既に正しい場所にある）
@@ -415,7 +427,7 @@ class Dev_Favicon_Switcher {
 							<div id="dev-icon-preview">
 								<?php if ( $dev_icon_url ) : ?>
 									<img src="<?php echo esc_url( $dev_icon_url ); ?>" 
-										style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">
+										style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px; margin-bottom:1em;">
 									<?php
 		endif;
 								?>
@@ -427,7 +439,10 @@ class Dev_Favicon_Switcher {
 							<button type="button" class="button" id="select-dev-icon">
 								<?php _e( 'Select Development Icon', 'dev-favicon-switcher' ); ?>
 							</button>
-							<button type="button" class="button" id="remove-dev-icon" 
+							<button type="button" class="button" style="margin-left:0.5em;" id="restore-default-icon">
+								<?php _e( 'Restore Default', 'dev-favicon-switcher' ); ?>
+							</button>
+							<button type="button" class="button" style="margin-left:0.5em;" id="remove-dev-icon" 
 									<?php echo empty( $settings['dev_icon_id'] ) ? 'style="display:none;"' : ''; ?>>
 								<?php _e( 'Remove', 'dev-favicon-switcher' ); ?>
 							</button>
@@ -685,13 +700,10 @@ class Dev_Favicon_Switcher {
 		$dev_extension     = pathinfo( $dev_filename, PATHINFO_EXTENSION );
 		$dev_filename_base = preg_replace( '/\.' . preg_quote( $dev_extension, '/' ) . '$/', '', $dev_filename );
 
-		// 開発アイコンの最終更新時刻を取得（ブラウザキャッシュを抑止。Unixタイムスタンプ）
-		$last_updated = get_post_modified_time( 'U', true, $settings['dev_icon_id'] );
-
-		// URLのファイル名部分を置換（サイズsuffixは保持、拡張子も動的に対応）
+		// URLのファイル名部分を置換（サイズsuffixは保持、拡張子も動的に対応。クエリストリングは使用しない）
 		$url = preg_replace(
 			'#/' . preg_quote( $prod_filename_base, '#' ) . '(-\d+x\d+)?\.' . preg_quote( $prod_extension, '#' ) . '#',
-			'/' . $dev_filename_base . '$1.' . $dev_extension . '?v=' . $last_updated,
+			'/' . $dev_filename_base . '$1.' . $dev_extension,
 			$url
 		);
 
@@ -745,14 +757,11 @@ class Dev_Favicon_Switcher {
 		$dev_filename_base = preg_replace( '/\.' . preg_quote( $dev_extension, '/' ) . '$/', '', $dev_filename );
 		$dev_path          = dirname( parse_url( $dev_icon_url, PHP_URL_PATH ) );
 
-		// 開発アイコンの最終更新時刻を取得（ブラウザキャッシュを抑止。Unixタイムスタンプ）
-		$last_updated = get_post_modified_time( 'U', true, $settings['dev_icon_id'] );
-
 		foreach ( $meta_tags as &$tag ) {
-			// ファイル名を置換（拡張子も動的に対応）
+			// ファイル名を置換（拡張子も動的に対応。クエリストリングは使用しない）
 			$tag = preg_replace(
 				'#/' . preg_quote( $prod_filename_base, '#' ) . '(-\d+x\d+)?\.' . preg_quote( $prod_extension, '#' ) . '#',
-				'/' . $dev_filename_base . '$1.' . $dev_extension . '?v=' . $last_updated,
+				'/' . $dev_filename_base . '$1.' . $dev_extension,
 				$tag
 			);
 
@@ -813,7 +822,8 @@ class Dev_Favicon_Switcher {
 		// アップロードディレクトリの準備
 		$upload_dir  = wp_upload_dir();
 		$target_dir  = $upload_dir['basedir'] . '/dev-favicon-switcher';
-		$target_path = $target_dir . '/dev_favicon.png';
+		$timestamp   = time();
+		$target_path = $target_dir . '/dev_favicon-' . $timestamp . '.png';
 
 		// 独自のサブディレクトリを作成
 		if ( ! file_exists( $target_dir ) ) {
@@ -834,7 +844,7 @@ class Dev_Favicon_Switcher {
 		$attachment = array(
 			'post_title'     => 'dev-favicon-default',
 			'post_mime_type' => 'image/png',
-			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/dev_favicon.png',
+			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/dev_favicon-' . $timestamp . '.png',
 		);
 
 		$attachment_id = wp_insert_attachment( $attachment, $target_path );
@@ -866,6 +876,142 @@ class Dev_Favicon_Switcher {
 		);
 		$settings['dev_icon_id'] = $attachment_id;
 		update_option( $this->option_name, $settings );
+	}
+
+	/**
+	 * 設定されたIDが dev-favicon-switcher/ 内のファイルでなければクローンしてタイムスタンプ付きの複製を作る
+	 *
+	 * @param int $attachment_id 元のアタッチメントID
+	 * @return int|false 新しいアタッチメントID。失敗または不要な場合はfalse
+	 */
+	private function ensure_timestamped_clone( $attachment_id ) {
+		$file_path = get_attached_file( $attachment_id );
+		if ( ! $file_path || ! file_exists( $file_path ) ) {
+			return false;
+		}
+
+		// 既に dev-favicon-switcher ディレクトリ内にあるかチェック
+		if ( strpos( $file_path, 'dev-favicon-switcher' ) !== false ) {
+			// 一度プラグインによってタイムスタンプ付き等で作られたファイルとみなす
+			return false;
+		}
+
+		// クローン先の準備
+		$upload_dir = wp_upload_dir();
+		$target_dir = $upload_dir['basedir'] . '/dev-favicon-switcher';
+		if ( ! file_exists( $target_dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $target_dir );
+			} else {
+				@mkdir( $target_dir, 0755, true );
+			}
+		}
+
+		// タイムスタンプ付きのファイル名を生成
+		$original_basename = basename( $file_path );
+		$original_name     = pathinfo( $original_basename, PATHINFO_FILENAME );
+		$extension         = pathinfo( $original_basename, PATHINFO_EXTENSION );
+
+		$timestamp        = time();
+		$desired_filename = 'cloned-' . $original_name . '-' . $timestamp . '.' . $extension;
+		$target_path      = $target_dir . '/' . $desired_filename;
+
+		// ファイルをコピー
+		if ( ! copy( $file_path, $target_path ) ) {
+			error_log( 'Dev Favicon: Failed to clone icon to uploads directory.' );
+			return false;
+		}
+
+		// 新しいメディアとして登録
+		$attachment = array(
+			'post_title'     => 'dev-favicon-cloned',
+			'post_mime_type' => 'image/' . $extension,
+			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/' . $desired_filename,
+		);
+
+		$new_attachment_id = wp_insert_attachment( $attachment, $target_path );
+		if ( is_wp_error( $new_attachment_id ) ) {
+			@unlink( $target_path );
+			error_log( 'Dev Favicon: Failed to insert cloned icon to media library.' );
+			return false;
+		}
+
+		// メタデータの生成・更新
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		wp_update_attachment_metadata(
+			$new_attachment_id,
+			wp_generate_attachment_metadata( $new_attachment_id, $target_path )
+		);
+
+		return $new_attachment_id;
+	}
+
+	/**
+	 * 保持すべきアクティブなアタッチメント以外の、専用ディレクトリ内の画像のDBレコードおよび実体ファイルを一括削除する
+	 *
+	 * @param int $active_attachment_id 現在使用中として保持すべき画像のアタッチメントID（0の場合はすべて削除）
+	 */
+	private function cleanup_unused_dev_icons( $active_attachment_id ) {
+		global $wpdb;
+
+		// guid に dev-favicon-switcher を含むアタッチメントをすべて検索
+		$query   = "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' AND guid LIKE '%/dev-favicon-switcher/%'";
+		$results = $wpdb->get_results( $query );
+
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$id = absint( $row->ID );
+				// アクティブなID以外は完全に削除する
+				if ( $id !== absint( $active_attachment_id ) ) {
+					// 削除漏れファイルの削除を予約（180x180、192x192、270x270などサイトアイコン専用規格の削除漏れ対策。後続のwp_delete_attachment()内で削除実行）
+					//
+					// ※本来はこのadd_action()は書かず、画像ファイルリサイズ時にmetaデータを適正に登録することでwp_delete_attachment()一発で自動全削除になるように実装すべき@2026/03/08 20:35
+					// 将来的に修正を要検討。
+					//
+					// wp_generate_attachment_metadata()一発で必要な全サイズのファイルとメタデータを生成できる可能性もある。
+					// 参考: https://developer.wordpress.org/reference/functions/wp_generate_attachment_metadata/
+					// その場合はwp_generate_attachment_metadata()から呼ばれるwp_create_image_subsizes()末尾にある以下の行のフィルターに必要なサイズ情報を仕込む形になるか。
+					// $new_sizes = apply_filters( 'intermediate_image_sizes_advanced', $new_sizes, $image_meta, $attachment_id );
+					//
+					// それが無理ならリサイズ処理の前後に手動でメタデータを登録する処理を追加するしかない。その場合の実装イメージ:
+					/*
+					// メタデータに追加登録
+					$meta = wp_get_attachment_metadata( $attachment_id );
+					$meta['sizes']["dev-favicon-{$size}"] = [
+						'file'      => $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'],
+						'width'     => $size,
+						'height'    => $size,
+						'mime-type' => "image/{$path_parts['extension']}",
+					];
+					wp_update_attachment_metadata( $attachment_id, $meta );
+					*/
+					add_action(
+						'delete_attachment',
+						function ( $post_id ) {
+							$file = get_attached_file( $post_id );
+							if ( ! $file ) {
+								return;
+							}
+
+							$dir      = dirname( $file );
+							$info     = pathinfo( $file );
+							$basename = $info['filename'];
+							$ext      = $info['extension'];
+
+							// 例: dev_favicon-1772966107-*.png にマッチする残骸を全削除
+							$pattern = "{$dir}/{$basename}-*[0-9]x[0-9]*.{$ext}";
+							foreach ( glob( $pattern ) as $orphan ) {
+								wp_delete_file( $orphan );
+							}
+						}
+					);
+
+					// wp_delete_attachment(ID, true) を呼ぶと、連携して関連するメタデータ、元画像、リサイズ済み画像がすべてファイルシステムからも削除される
+					wp_delete_attachment( $id, true );
+					error_log( 'Dev Favicon: Garbage collected unused icon ID ' . $id );
+				}
+			}
+		}
 	}
 }
 
