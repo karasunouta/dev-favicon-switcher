@@ -107,6 +107,7 @@ class Dev_Favicon_Switcher {
 		$sanitized['dev_urls'] = ! empty( $input['dev_urls'] ) ? sanitize_textarea_field( $input['dev_urls'] ) : '';
 
 		// Custom sizes (textarea, numbers only)
+		/*
 		if ( ! empty( $input['custom_sizes'] ) ) {
 			$lines       = explode( "\n", $input['custom_sizes'] );
 			$valid_sizes = array();
@@ -120,10 +121,11 @@ class Dev_Favicon_Switcher {
 		} else {
 			$sanitized['custom_sizes'] = '';
 		}
+		*/
 
 		// Development iconが設定されている場合、必要なサイズを自動生成
 		if ( ! empty( $sanitized['dev_icon_id'] ) ) {
-			$this->generate_icon_sizes( $sanitized['dev_icon_id'], $sanitized['custom_sizes'] );
+			$this->generate_icon_sizes( $sanitized['dev_icon_id']/*, $sanitized['custom_sizes']*/ );
 		}
 
 		return $sanitized;
@@ -243,9 +245,9 @@ class Dev_Favicon_Switcher {
 		);
 
 		// ファビコン専用サイズを生成（これが抜けていた！）
-		$settings     = get_option( $this->option_name );
-		$custom_sizes = ! empty( $settings['custom_sizes'] ) ? $settings['custom_sizes'] : '';
-		$result       = $this->generate_icon_sizes( $new_attachment_id, $custom_sizes );
+		$settings = get_option( $this->option_name );
+		// $custom_sizes = ! empty( $settings['custom_sizes'] ) ? $settings['custom_sizes'] : '';
+		$result = $this->generate_icon_sizes( $new_attachment_id/*, $custom_sizes*/ );
 
 		if ( is_wp_error( $result ) ) {
 			error_log( 'Dev Favicon: Failed to generate sizes - ' . $result->get_error_message() );
@@ -345,11 +347,11 @@ class Dev_Favicon_Switcher {
 		$settings = get_option(
 			$this->option_name,
 			array(
-				'enabled'      => '1',
-				'dev_icon_id'  => '',
-				'dev_urls'     => '',
-				'auto_detect'  => '1',
-				'custom_sizes' => '',
+				'enabled'     => '1',
+				'dev_icon_id' => '',
+				'dev_urls'    => '',
+				'auto_detect' => '1',
+				// 'custom_sizes' => '',
 			)
 		);
 
@@ -492,6 +494,7 @@ class Dev_Favicon_Switcher {
 					</tr>
 					
 					<!-- Custom Sizes (Advanced) -->
+					<!--
 					<tr>
 						<th scope="row">
 							<label for="custom_sizes"><?php _e( 'Custom Icon Sizes', 'dev-favicon-switcher' ); ?></label>
@@ -507,6 +510,7 @@ class Dev_Favicon_Switcher {
 							</p>
 						</td>
 					</tr>
+					-->
 				</table>
 				
 				<?php submit_button( __( 'Save Settings', 'dev-favicon-switcher' ) ); ?>
@@ -576,7 +580,7 @@ class Dev_Favicon_Switcher {
 		wp_send_json_success( $result );
 	}
 
-	private function generate_icon_sizes( $attachment_id, $custom_sizes_str = '' ) {
+	private function generate_icon_sizes( $attachment_id/*, $custom_sizes_str = ''*/ ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
 		$file_path = get_attached_file( $attachment_id );
@@ -587,6 +591,7 @@ class Dev_Favicon_Switcher {
 		// 基本サイズ + カスタムサイズ
 		$sizes = $this->required_sizes;
 
+		/*
 		if ( ! empty( $custom_sizes_str ) ) {
 			$custom_lines = explode( "\n", $custom_sizes_str );
 			foreach ( $custom_lines as $line ) {
@@ -596,6 +601,7 @@ class Dev_Favicon_Switcher {
 				}
 			}
 		}
+		*/
 
 		$generated = array();
 		$skipped   = array();
