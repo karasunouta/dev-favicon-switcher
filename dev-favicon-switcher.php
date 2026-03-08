@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.5
+ * Version: 1.3.6
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.5';
+	const VERSION = '1.3.6';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -60,7 +60,7 @@ class Dev_Favicon_Switcher {
 			array( $this, 'add_settings_link' )
 		);
 
-		// プラグイン有効化時のリダイレクト
+		// プラグイン有効化時の初期設定とリダイレクト
 		add_action( 'activated_plugin', array( $this, 'redirect_after_activation' ) );
 	}
 
@@ -769,30 +769,103 @@ class Dev_Favicon_Switcher {
 	 * プラグイン有効化後に設定ページへリダイレクト（初回のみ）
 	 */
 	public function redirect_after_activation( $plugin ) {
-		if ( $plugin === plugin_basename( __FILE__ ) ) {
-			// 複数プラグイン一括有効化の場合はリダイレクトしない
-			if ( isset( $_GET['activate-multi'] ) ) {
-				return;
-			}
+		// 他プラグインの有効化の場合は処理回避
+		if ( $plugin !== plugin_basename( __FILE__ ) ) {
+			return;
+		}
 
-			// 初回有効化フラグをチェック
-			$is_first_activation = get_transient( 'dev-favicon-switcher_first_activation' );
+		// 初回有効化以外の場合は処理回避
+		$is_first_activation = get_transient( 'dev_favicon_switcher_first_activation' );
+		if ( ! $is_first_activation ) {
+			return;
+		}
 
-			if ( $is_first_activation ) {
-				// 転送フラグトランジェントを削除（直後に無効化→有効化処理が行われても再度リダイレクトはしない）
-				delete_transient( 'dev-favicon-switcher_first_activation' );
+		// 転送フラグトランジェントを削除（続けて無効化→有効化処理が行われても再度リダイレクトはしない）
+		delete_transient( 'dev_favicon_switcher_first_activation' );
 
-				// 初回セットアップ完了フラグをセット（次回トランジェントの生成抑止）
-				update_option( 'dev-favicon-switcher_setup_completed', true );
+		// 初回セットアップ完了フラグをセット（次回トランジェントの生成抑止）
+		update_option( 'dev_favicon_switcher_setup_completed', true );
 
-				// 設定ページのURLを構成
-				$redirect_url = admin_url( "options-general.php?page={$this->page_slug}" );
+		// 初回有効化時にデフォルトアイコンをプロビジョニング
+		$this->deploy_default_icon();
 
-				// リダイレクト実行
-				wp_safe_redirect( $redirect_url );
-				exit;
+		// 複数プラグイン一括有効化の場合はリダイレクトしない
+		if ( ! isset( $_GET['activate-multi'] ) ) {
+			// 設定ページのURLを構成
+			$redirect_url = admin_url( "options-general.php?page={$this->page_slug}" );
+
+			// リダイレクト実行
+			wp_safe_redirect( $redirect_url );
+			exit;
+		}
+	}
+
+	/**
+	 * デフォルトアイコンのデプロイと初期設定
+	 */
+	private function deploy_default_icon() {
+		// プラグイン内のデフォルト画像パス
+		$default_icon_path = plugin_dir_path( __FILE__ ) . 'assets/dev_favicon.png';
+		if ( ! file_exists( $default_icon_path ) ) {
+			return;
+		}
+
+		// アップロードディレクトリの準備
+		$upload_dir  = wp_upload_dir();
+		$target_dir  = $upload_dir['basedir'] . '/dev-favicon-switcher';
+		$target_path = $target_dir . '/dev_favicon.png';
+
+		// 独自のサブディレクトリを作成
+		if ( ! file_exists( $target_dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $target_dir );
+			} else {
+				@mkdir( $target_dir, 0755, true );
 			}
 		}
+
+		// プラグインから uploads に画像をコピー
+		if ( ! copy( $default_icon_path, $target_path ) ) {
+			error_log( 'Dev Favicon: Failed to copy default icon to uploads directory.' );
+			return;
+		}
+
+		// メディアライブラリに登録
+		$attachment = array(
+			'post_title'     => 'dev-favicon-default',
+			'post_mime_type' => 'image/png',
+			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/dev_favicon.png',
+		);
+
+		$attachment_id = wp_insert_attachment( $attachment, $target_path );
+		if ( is_wp_error( $attachment_id ) ) {
+			error_log( 'Dev Favicon: Failed to insert default icon to media library.' );
+			return;
+		}
+
+		// メタデータの生成・更新（画像サイズの取得など）
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		wp_update_attachment_metadata(
+			$attachment_id,
+			wp_generate_attachment_metadata( $attachment_id, $target_path )
+		);
+
+		// ファビコン専用のリサイズ版画像を生成
+		$result = $this->generate_icon_sizes( $attachment_id );
+		if ( is_wp_error( $result ) ) {
+			error_log( 'Dev Favicon: Failed to generate default icon sizes - ' . $result->get_error_message() );
+		}
+
+		// 設定にデプロイされた画像をセット
+		$settings                = get_option(
+			$this->option_name,
+			array(
+				'enabled'     => '1',
+				'auto_detect' => '1',
+			)
+		);
+		$settings['dev_icon_id'] = $attachment_id;
+		update_option( $this->option_name, $settings );
 	}
 }
 
@@ -801,11 +874,11 @@ register_activation_hook(
 	__FILE__,
 	function () {
 		// 初回セットアップ完了フラグをチェック
-		$setup_completed = get_option( 'dev-favicon-switcher_setup_completed' );
+		$setup_completed = get_option( 'dev_favicon_switcher_setup_completed' );
 
 		if ( ! $setup_completed ) {
 			// 初回のみ転送フラグトランジェントをセット（60秒間有効）
-			set_transient( 'dev-favicon-switcher_first_activation', true, 60 );
+			set_transient( 'dev_favicon_switcher_first_activation', true, 60 );
 		}
 	}
 );
