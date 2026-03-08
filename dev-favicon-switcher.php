@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.4
+ * Version: 1.3.5
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,11 +27,10 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.4';
+	const VERSION = '1.3.5';
 
-	private $option_name    = 'dev_favicon_switcher_settings';
-	private $required_sizes = array( 32, 180, 192, 270 );
-	private $page_slug      = 'dev-favicon-switcher';
+	private $option_name = 'dev_favicon_switcher_settings';
+	private $page_slug   = 'dev-favicon-switcher';
 
 	public function __construct() {
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
@@ -106,26 +105,9 @@ class Dev_Favicon_Switcher {
 		// Dev URLs (textarea, one per line)
 		$sanitized['dev_urls'] = ! empty( $input['dev_urls'] ) ? sanitize_textarea_field( $input['dev_urls'] ) : '';
 
-		// Custom sizes (textarea, numbers only)
-		/*
-		if ( ! empty( $input['custom_sizes'] ) ) {
-			$lines       = explode( "\n", $input['custom_sizes'] );
-			$valid_sizes = array();
-			foreach ( $lines as $line ) {
-				$size = trim( $line );
-				if ( is_numeric( $size ) && $size > 0 ) {
-					$valid_sizes[] = intval( $size );
-				}
-			}
-			$sanitized['custom_sizes'] = implode( "\n", $valid_sizes );
-		} else {
-			$sanitized['custom_sizes'] = '';
-		}
-		*/
-
 		// Development iconが設定されている場合、必要なサイズを自動生成
 		if ( ! empty( $sanitized['dev_icon_id'] ) ) {
-			$this->generate_icon_sizes( $sanitized['dev_icon_id']/*, $sanitized['custom_sizes']*/ );
+			$this->generate_icon_sizes( $sanitized['dev_icon_id'] );
 		}
 
 		return $sanitized;
@@ -244,10 +226,9 @@ class Dev_Favicon_Switcher {
 			wp_generate_attachment_metadata( $new_attachment_id, $target_path )
 		);
 
-		// ファビコン専用サイズを生成（これが抜けていた！）
+		// ファビコン専用サイズを生成
 		$settings = get_option( $this->option_name );
-		// $custom_sizes = ! empty( $settings['custom_sizes'] ) ? $settings['custom_sizes'] : '';
-		$result = $this->generate_icon_sizes( $new_attachment_id/*, $custom_sizes*/ );
+		$result   = $this->generate_icon_sizes( $new_attachment_id );
 
 		if ( is_wp_error( $result ) ) {
 			error_log( 'Dev Favicon: Failed to generate sizes - ' . $result->get_error_message() );
@@ -351,7 +332,6 @@ class Dev_Favicon_Switcher {
 				'dev_icon_id' => '',
 				'dev_urls'    => '',
 				'auto_detect' => '1',
-				// 'custom_sizes' => '',
 			)
 		);
 
@@ -493,30 +473,22 @@ class Dev_Favicon_Switcher {
 						</td>
 					</tr>
 					
-					<!-- Custom Sizes (Advanced) -->
-					<!--
-					<tr>
-						<th scope="row">
-							<label for="custom_sizes"><?php _e( 'Custom Icon Sizes', 'dev-favicon-switcher' ); ?></label>
-						</th>
-						<td>
-							<textarea name="<?php echo $this->option_name; ?>[custom_sizes]" 
-										id="custom_sizes" 
-										rows="3" 
-										class="regular-text"
-										placeholder="64&#10;128&#10;256"><?php echo esc_textarea( $settings['custom_sizes'] ); ?></textarea>
-							<p class="description">
-								<?php _e( 'Optional: Add custom icon sizes in pixels (one per line). Standard sizes (32, 180, 192, 270) are always included.', 'dev-favicon-switcher' ); ?>
-							</p>
-						</td>
-					</tr>
-					-->
 				</table>
 				
 				<?php submit_button( __( 'Save Settings', 'dev-favicon-switcher' ) ); ?>
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * 動的にファビコンの必要サイズ配列を取得
+	 */
+	private function get_required_sizes() {
+		// WordPressコアのデフォルトサイズに対してフィルターを適用し、テーマ等による追加分を取得
+		$sizes = apply_filters( 'site_icon_image_sizes', array( 32, 180, 192, 270 ) );
+		// 重複を排除して整数化
+		return array_unique( array_map( 'absint', $sizes ) );
 	}
 
 	public function ajax_check_sizes() {
@@ -539,9 +511,10 @@ class Dev_Favicon_Switcher {
 		$missing_sizes  = array();
 		$existing_sizes = array();
 
-		$path_parts = pathinfo( $file_path );
+		$path_parts     = pathinfo( $file_path );
+		$required_sizes = $this->get_required_sizes();
 
-		foreach ( $this->required_sizes as $size ) {
+		foreach ( $required_sizes as $size ) {
 			$sized_file = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'];
 
 			if ( file_exists( $sized_file ) ) {
@@ -580,7 +553,7 @@ class Dev_Favicon_Switcher {
 		wp_send_json_success( $result );
 	}
 
-	private function generate_icon_sizes( $attachment_id/*, $custom_sizes_str = ''*/ ) {
+	private function generate_icon_sizes( $attachment_id ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
 		$file_path = get_attached_file( $attachment_id );
@@ -588,26 +561,11 @@ class Dev_Favicon_Switcher {
 			return new WP_Error( 'file_not_found', 'Icon file not found' );
 		}
 
-		// 基本サイズ + カスタムサイズ
-		$sizes = $this->required_sizes;
-
-		/*
-		if ( ! empty( $custom_sizes_str ) ) {
-			$custom_lines = explode( "\n", $custom_sizes_str );
-			foreach ( $custom_lines as $line ) {
-				$size = intval( trim( $line ) );
-				if ( $size > 0 && ! in_array( $size, $sizes ) ) {
-					$sizes[] = $size;
-				}
-			}
-		}
-		*/
+		$sizes = $this->get_required_sizes();
 
 		$generated = array();
 		$skipped   = array();
 		$errors    = array();
-
-		$prod_extension = pathinfo( $file_path, PATHINFO_EXTENSION );
 
 		foreach ( $sizes as $size ) {
 			// ファイル名の最後の拡張子のみを置換（より安全）
