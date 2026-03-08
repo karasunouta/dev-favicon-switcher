@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.3
+ * Version: 1.3.4
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.3';
+	const VERSION = '1.3.4';
 
 	private $option_name    = 'dev_favicon_switcher_settings';
 	private $required_sizes = array( 32, 180, 192, 270 );
@@ -721,10 +721,13 @@ class Dev_Favicon_Switcher {
 		$dev_extension     = pathinfo( $dev_filename, PATHINFO_EXTENSION );
 		$dev_filename_base = preg_replace( '/\.' . preg_quote( $dev_extension, '/' ) . '$/', '', $dev_filename );
 
+		// 開発アイコンの最終更新時刻を取得（ブラウザキャッシュを抑止。Unixタイムスタンプ）
+		$last_updated = get_post_modified_time( 'U', true, $settings['dev_icon_id'] );
+
 		// URLのファイル名部分を置換（サイズsuffixは保持、拡張子も動的に対応）
 		$url = preg_replace(
 			'#/' . preg_quote( $prod_filename_base, '#' ) . '(-\d+x\d+)?\.' . preg_quote( $prod_extension, '#' ) . '#',
-			'/' . $dev_filename_base . '$1.' . $dev_extension,
+			'/' . $dev_filename_base . '$1.' . $dev_extension . '?v=' . $last_updated,
 			$url
 		);
 
@@ -778,11 +781,14 @@ class Dev_Favicon_Switcher {
 		$dev_filename_base = preg_replace( '/\.' . preg_quote( $dev_extension, '/' ) . '$/', '', $dev_filename );
 		$dev_path          = dirname( parse_url( $dev_icon_url, PHP_URL_PATH ) );
 
+		// 開発アイコンの最終更新時刻を取得（ブラウザキャッシュを抑止。Unixタイムスタンプ）
+		$last_updated = get_post_modified_time( 'U', true, $settings['dev_icon_id'] );
+
 		foreach ( $meta_tags as &$tag ) {
 			// ファイル名を置換（拡張子も動的に対応）
 			$tag = preg_replace(
 				'#/' . preg_quote( $prod_filename_base, '#' ) . '(-\d+x\d+)?\.' . preg_quote( $prod_extension, '#' ) . '#',
-				'/' . $dev_filename_base . '$1.' . $dev_extension,
+				'/' . $dev_filename_base . '$1.' . $dev_extension . '?v=' . $last_updated,
 				$tag
 			);
 
