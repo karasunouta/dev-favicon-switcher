@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.7
+ * Version: 1.3.8
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.7';
+	const VERSION = '1.3.8';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -53,6 +53,9 @@ class Dev_Favicon_Switcher {
 
 		// 開発アイコン削除Ajax handler
 		add_action( 'wp_ajax_dev_favicon_remove_icon', array( $this, 'ajax_remove_icon' ) );
+
+		// 開発アイコン復元Ajax handler
+		add_action( 'wp_ajax_dev_favicon_restore_default', array( $this, 'ajax_restore_default' ) );
 
 		// インストール済みプラグイン一覧から設定ページにリンク
 		add_filter(
@@ -277,6 +280,81 @@ class Dev_Favicon_Switcher {
 		error_log( 'Dev Favicon: Icon setting removed (image file preserved)' );
 
 		wp_send_json_success( array( 'message' => 'Icon setting removed' ) );
+	}
+
+	/**
+	 * デフォルト開発アイコン復元Ajaxハンドラー
+	 */
+	public function ajax_restore_default() {
+		check_ajax_referer( 'dev_favicon_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		// プラグイン内のデフォルト画像パス
+		$default_icon_path = plugin_dir_path( __FILE__ ) . 'assets/dev_favicon.png';
+		if ( ! file_exists( $default_icon_path ) ) {
+			wp_send_json_error( 'Default icon file not found in plugin.' );
+		}
+
+		// アップロードディレクトリの準備
+		$upload_dir  = wp_upload_dir();
+		$target_dir  = $upload_dir['basedir'] . '/dev-favicon-switcher';
+		$timestamp   = time();
+		$target_path = $target_dir . '/dev_favicon-' . $timestamp . '.png';
+
+		// 独自のサブディレクトリを作成
+		if ( ! file_exists( $target_dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $target_dir );
+			} else {
+				@mkdir( $target_dir, 0755, true );
+			}
+		}
+
+		// プラグインから uploads に画像をコピー
+		if ( ! copy( $default_icon_path, $target_path ) ) {
+			error_log( 'Dev Favicon: Failed to copy default icon to uploads directory.' );
+			wp_send_json_error( 'Failed to copy default icon to uploads directory.' );
+		}
+
+		// メディアライブラリに登録
+		$attachment = array(
+			'post_title'     => 'dev-favicon-default',
+			'post_mime_type' => 'image/png',
+			'guid'           => $upload_dir['baseurl'] . '/dev-favicon-switcher/dev_favicon-' . $timestamp . '.png',
+		);
+
+		$attachment_id = wp_insert_attachment( $attachment, $target_path );
+		if ( is_wp_error( $attachment_id ) ) {
+			error_log( 'Dev Favicon: Failed to insert default icon to media library.' );
+			wp_send_json_error( 'Failed to insert default icon to media library.' );
+		}
+
+		// メタデータの生成・更新（画像サイズの取得など）
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		wp_update_attachment_metadata(
+			$attachment_id,
+			wp_generate_attachment_metadata( $attachment_id, $target_path )
+		);
+
+		// ファビコン専用のリサイズ版画像を生成
+		$result = $this->generate_icon_sizes( $attachment_id );
+		if ( is_wp_error( $result ) ) {
+			error_log( 'Dev Favicon: Failed to generate default icon sizes - ' . $result->get_error_message() );
+		}
+
+		// URLを取得してクライアントに返す
+		$icon_url = wp_get_attachment_image_url( $attachment_id, 'full' );
+
+		wp_send_json_success(
+			array(
+				'id'      => $attachment_id,
+				'url'     => $icon_url,
+				'message' => 'Default development icon restored',
+			)
+		);
 	}
 
 	public function admin_enqueue_scripts( $hook ) {

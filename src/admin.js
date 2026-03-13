@@ -203,7 +203,7 @@ import './admin.css';
             removeButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm('Are you sure you want to remove the development icon setting?\n\n(The image file will remain in your media library)')) {
+                if (!confirm(__('Are you sure you want to remove the development icon setting?\n\n(The image file will remain in your media library)', 'dev-favicon-switcher'))) {
                     return;
                 }
                 
@@ -226,12 +226,61 @@ import './admin.css';
                         
                         console.log('Development icon setting removed');
                     } else {
-                        alert('Failed to remove icon setting: ' + (data.data || 'Unknown error'));
+                        alert(__('Failed to remove icon setting: ', 'dev-favicon-switcher') + (data.data || __('Unknown error', 'dev-favicon-switcher')));
                     }
                 })
                 .catch(error => {
                     console.error('Remove error:', error);
-                    alert('Failed to remove icon setting');
+                    alert(__('Failed to remove icon setting', 'dev-favicon-switcher'));
+                });
+            });
+        }
+
+        // Restore Default Icon
+        const restoreButton = document.getElementById('restore-default-icon');
+        if (restoreButton) {
+            restoreButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (!confirm(__('Are you sure you want to restore the default development icon?', 'dev-favicon-switcher'))) {
+                    return;
+                }
+                
+                // Add loading state
+                const originalText = restoreButton.innerHTML;
+                restoreButton.innerHTML = __('Restoring...', 'dev-favicon-switcher');
+                restoreButton.disabled = true;
+
+                const formData = new FormData();
+                formData.append('action', 'dev_favicon_restore_default');
+                formData.append('nonce', devFaviconAjax.nonce);
+                
+                fetch(devFaviconAjax.ajax_url, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    restoreButton.innerHTML = originalText;
+                    restoreButton.disabled = false;
+
+                    if (data.success && data.data && data.data.id && data.data.url) {
+                        // UI更新
+                        setDevIcon(data.data.id, data.data.url);
+                        
+                        console.log('Default development icon restored');
+                        
+                        // 保存を促す（実装プラン通り）
+                        alert(__('Default icon restored successfully. Please click "Save Settings" to apply changes.', 'dev-favicon-switcher'));
+                    } else {
+                        alert(__('Failed to restore default icon: ', 'dev-favicon-switcher') + (data.data || __('Unknown error', 'dev-favicon-switcher')));
+                    }
+                })
+                .catch(error => {
+                    restoreButton.innerHTML = originalText;
+                    restoreButton.disabled = false;
+                    console.error('Restore error:', error);
+                    alert(__('Failed to restore default icon.', 'dev-favicon-switcher'));
                 });
             });
         }
@@ -287,7 +336,7 @@ import './admin.css';
             removeButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm('Are you sure you want to remove the development icon?')) {
+                if (!confirm(__('Are you sure you want to remove the development icon?', 'dev-favicon-switcher'))) {
                     return;
                 }
                 
