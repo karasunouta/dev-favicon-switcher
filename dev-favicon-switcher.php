@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.6
+ * Version: 1.3.7
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.6';
+	const VERSION = '1.3.7';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -582,13 +582,30 @@ class Dev_Favicon_Switcher {
 		$skipped   = array();
 		$errors    = array();
 
+		$meta          = wp_get_attachment_metadata( $attachment_id );
+		$meta          = is_array( $meta ) ? $meta : array();
+		$meta['sizes'] = isset( $meta['sizes'] ) ? $meta['sizes'] : array();
+		$meta_updated  = false;
+
 		foreach ( $sizes as $size ) {
 			// ファイル名の最後の拡張子のみを置換（より安全）
-			$path_parts = pathinfo( $file_path );
-			$sized_file = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'];
+			$path_parts     = pathinfo( $file_path );
+			$sized_file     = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'];
+			$sized_filename = basename( $sized_file );
 
 			if ( file_exists( $sized_file ) ) {
 				$skipped[] = $size;
+
+				if ( ! isset( $meta['sizes'][ "dev-favicon-{$size}" ] ) ) {
+					$filetype                               = wp_check_filetype( $sized_file );
+					$meta['sizes'][ "dev-favicon-{$size}" ] = array(
+						'file'      => $sized_filename,
+						'width'     => $size,
+						'height'    => $size,
+						'mime-type' => $filetype['type'],
+					);
+					$meta_updated                           = true;
+				}
 				continue;
 			}
 
@@ -615,10 +632,22 @@ class Dev_Favicon_Switcher {
 				$errors[] = sprintf( 'Size %dx%d: %s', $size, $size, $saved->get_error_message() );
 			} else {
 				$generated[] = $size;
+
+				$meta['sizes'][ "dev-favicon-{$size}" ] = array(
+					'file'      => $sized_filename,
+					'width'     => $saved['width'],
+					'height'    => $saved['height'],
+					'mime-type' => $saved['mime-type'],
+				);
+				$meta_updated                           = true;
 			}
 
 			// メモリ解放（念のため）
 			unset( $image );
+		}
+
+		if ( $meta_updated ) {
+			wp_update_attachment_metadata( $attachment_id, $meta );
 		}
 
 		return array(
@@ -963,48 +992,8 @@ class Dev_Favicon_Switcher {
 				$id = absint( $row->ID );
 				// アクティブなID以外は完全に削除する
 				if ( $id !== absint( $active_attachment_id ) ) {
-					// 削除漏れファイルの削除を予約（180x180、192x192、270x270などサイトアイコン専用規格の削除漏れ対策。後続のwp_delete_attachment()内で削除実行）
-					//
-					// ※本来はこのadd_action()は書かず、画像ファイルリサイズ時にmetaデータを適正に登録することでwp_delete_attachment()一発で自動全削除になるように実装すべき@2026/03/08 20:35
-					// 将来的に修正を要検討。
-					//
-					// wp_generate_attachment_metadata()一発で必要な全サイズのファイルとメタデータを生成できる可能性もある。
-					// 参考: https://developer.wordpress.org/reference/functions/wp_generate_attachment_metadata/
-					// その場合はwp_generate_attachment_metadata()から呼ばれるwp_create_image_subsizes()末尾にある以下の行のフィルターに必要なサイズ情報を仕込む形になるか。
-					// $new_sizes = apply_filters( 'intermediate_image_sizes_advanced', $new_sizes, $image_meta, $attachment_id );
-					//
-					// それが無理ならリサイズ処理の前後に手動でメタデータを登録する処理を追加するしかない。その場合の実装イメージ:
-					/*
-					// メタデータに追加登録
-					$meta = wp_get_attachment_metadata( $attachment_id );
-					$meta['sizes']["dev-favicon-{$size}"] = [
-						'file'      => $path_parts['filename'] . '-' . $size . 'x' . $size . '.' . $path_parts['extension'],
-						'width'     => $size,
-						'height'    => $size,
-						'mime-type' => "image/{$path_parts['extension']}",
-					];
-					wp_update_attachment_metadata( $attachment_id, $meta );
-					*/
-					add_action(
-						'delete_attachment',
-						function ( $post_id ) {
-							$file = get_attached_file( $post_id );
-							if ( ! $file ) {
-								return;
-							}
-
-							$dir      = dirname( $file );
-							$info     = pathinfo( $file );
-							$basename = $info['filename'];
-							$ext      = $info['extension'];
-
-							// 例: dev_favicon-1772966107-*.png にマッチする残骸を全削除
-							$pattern = "{$dir}/{$basename}-*[0-9]x[0-9]*.{$ext}";
-							foreach ( glob( $pattern ) as $orphan ) {
-								wp_delete_file( $orphan );
-							}
-						}
-					);
+					// dev-favicon専用サイズのメタデータは生成時に登録済みのため、
+					// 削除漏れの心配はなく wp_delete_attachment で一掃される
 
 					// wp_delete_attachment(ID, true) を呼ぶと、連携して関連するメタデータ、元画像、リサイズ済み画像がすべてファイルシステムからも削除される
 					wp_delete_attachment( $id, true );
