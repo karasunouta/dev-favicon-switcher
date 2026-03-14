@@ -32,8 +32,8 @@ import './admin.css';
     // Site Icon Cropper (WordPress標準)
     // ============================================
     function setupSiteIconCropper() {
-        const selectButton = document.getElementById('select-dev-icon');
-        const removeButton = document.getElementById('remove-dev-icon');
+        const selectButton = document.getElementById('select-dev-favicon');
+        const removeButton = document.getElementById('remove-dev-favicon');
         
         if (!selectButton) return;
         
@@ -44,15 +44,15 @@ import './admin.css';
             return;
         }
         
-        let iconCropperFrame;
+        let faviconCropperFrame;
         
         selectButton.addEventListener('click', function(e) {
             e.preventDefault();
             
             // WP Coreの `site-icon.js` の実装に倣い、毎回フレームを再構築することで
             // その後のキャンセルや状態遷移時のバグを完全に回避（クロップ段階で中止して再試行した際の混乱を回避）
-            if (iconCropperFrame) {
-                iconCropperFrame.remove();
+            if (faviconCropperFrame) {
+                faviconCropperFrame.remove();
             }
             
             // カスタムCropperコントローラーを作成（WordPress標準のアクションを上書き）
@@ -73,8 +73,8 @@ import './admin.css';
                     })
                     .done(function(attachmentData) {
                         console.log('Crop successful:', attachmentData);
-                        setDevIcon(attachmentData.id, attachmentData.url);
-                        iconCropperFrame.close();
+                        setDevFavicon(attachmentData.id, attachmentData.url);
+                        faviconCropperFrame.close();
                     })
                     .fail(function(error) {
                         console.error('Crop failed:', error);
@@ -84,14 +84,14 @@ import './admin.css';
             });
             
             // Create media frame with custom cropper
-            iconCropperFrame = wp.media({
+            faviconCropperFrame = wp.media({
                 button: {
                     text: 'Crop Image',
                     close: false
                 },
                 states: [
                     new wp.media.controller.Library({
-                        title: 'Choose Development Icon',
+                        title: 'Choose Dev Favicon',
                         library: wp.media.query({ type: 'image' }),
                         multiple: false,
                         date: false,
@@ -115,35 +115,35 @@ import './admin.css';
             });
             
             // When user selects an image from library
-            iconCropperFrame.on('select', function() {
-                const selection = iconCropperFrame.state().get('selection');
+            faviconCropperFrame.on('select', function() {
+                const selection = faviconCropperFrame.state().get('selection');
                 const attachment = selection.first().toJSON();
                 
                 console.log('Image selected:', attachment);
                 
                 // Proceed to crop state
-                iconCropperFrame.setState('cropper');
+                faviconCropperFrame.setState('cropper');
             });
             
             // When user skips cropping
-            iconCropperFrame.on('skippedcrop', function() {
+            faviconCropperFrame.on('skippedcrop', function() {
                 console.log('Crop skipped');
-                const selection = iconCropperFrame.state().get('selection');
+                const selection = faviconCropperFrame.state().get('selection');
                 const attachment = selection.first().toJSON();
-                setDevIcon(attachment.id, attachment.url);
-                iconCropperFrame.close();
+                setDevFavicon(attachment.id, attachment.url);
+                faviconCropperFrame.close();
             });
             
-            iconCropperFrame.open();
+            faviconCropperFrame.open();
         });
         
         // Helper function to set dev icon
-        function setDevIcon(attachmentId, attachmentUrl) {
+        function setDevFavicon(attachmentId, attachmentUrl) {
             console.log('Setting dev icon:', attachmentId, attachmentUrl);
             
-            document.getElementById('dev_icon_id').value = attachmentId;
+            document.getElementById('dev_favicon_id').value = attachmentId;
             
-            const preview = document.getElementById('dev-icon-preview');
+            const preview = document.getElementById('dev-favicon-preview');
             preview.innerHTML = `<img src="${attachmentUrl}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
             
             if (removeButton) {
@@ -203,7 +203,7 @@ import './admin.css';
             removeButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm(__('Are you sure you want to remove the development icon setting?\n\n(The image file will remain in your media library)', 'dev-favicon-switcher'))) {
+                if (!confirm(__('Are you sure you want to remove the dev favicon setting?\n\n(The image file will remain in your media library)', 'dev-favicon-switcher'))) {
                     return;
                 }
                 
@@ -220,11 +220,11 @@ import './admin.css';
                 .then(data => {
                     if (data.success) {
                         // UI更新
-                        document.getElementById('dev_icon_id').value = '';
-                        document.getElementById('dev-icon-preview').innerHTML = '';
+                        document.getElementById('dev_favicon_id').value = '';
+                        document.getElementById('dev-favicon-preview').innerHTML = '';
                         removeButton.style.display = 'none';
                         
-                        console.log('Development icon setting removed');
+                        console.log('Dev favicon setting removed');
                     } else {
                         alert(__('Failed to remove icon setting: ', 'dev-favicon-switcher') + (data.data || __('Unknown error', 'dev-favicon-switcher')));
                     }
@@ -237,12 +237,12 @@ import './admin.css';
         }
 
         // Restore Default Icon
-        const restoreButton = document.getElementById('restore-default-icon');
+        const restoreButton = document.getElementById('restore-default-favicon');
         if (restoreButton) {
             restoreButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm(__('Are you sure you want to restore the default development icon?', 'dev-favicon-switcher'))) {
+                if (!confirm(__('Are you sure you want to restore the default dev favicon?', 'dev-favicon-switcher'))) {
                     return;
                 }
                 
@@ -266,9 +266,9 @@ import './admin.css';
 
                     if (data.success && data.data && data.data.id && data.data.url) {
                         // UI更新
-                        setDevIcon(data.data.id, data.data.url);
+                        setDevFavicon(data.data.id, data.data.url);
                         
-                        console.log('Default development icon restored');
+                        console.log('Default dev favicon restored');
                         
                         // 保存を促す（実装プラン通り）
                         alert(__('Default icon restored successfully. Please click "Save Settings" to apply changes.', 'dev-favicon-switcher'));
@@ -290,22 +290,22 @@ import './admin.css';
     // Simple Media Uploader (Fallback)
     // ============================================
     function setupSimpleMediaUploader() {
-        const selectButton = document.getElementById('select-dev-icon');
-        const removeButton = document.getElementById('remove-dev-icon');
+        const selectButton = document.getElementById('select-dev-favicon');
+        const removeButton = document.getElementById('remove-dev-favicon');
         
         if (!selectButton) return;
         
-        let devIconFrame;
+        let devFaviconFrame;
         
         selectButton.addEventListener('click', function(e) {
             e.preventDefault();
             
-            if (devIconFrame) {
-                devIconFrame.open();
+            if (devFaviconFrame) {
+                devFaviconFrame.open();
                 return;
             }
             
-            devIconFrame = wp.media({
+            devFaviconFrame = wp.media({
                 title: 'Select Development Favicon',
                 button: {
                     text: 'Use this icon'
@@ -316,12 +316,12 @@ import './admin.css';
                 }
             });
             
-            devIconFrame.on('select', function() {
-                const attachment = devIconFrame.state().get('selection').first().toJSON();
+            devFaviconFrame.on('select', function() {
+                const attachment = devFaviconFrame.state().get('selection').first().toJSON();
                 
-                document.getElementById('dev_icon_id').value = attachment.id;
+                document.getElementById('dev_favicon_id').value = attachment.id;
                 
-                const preview = document.getElementById('dev-icon-preview');
+                const preview = document.getElementById('dev-favicon-preview');
                 preview.innerHTML = `<img src="${attachment.url}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
                 
                 if (removeButton) {
@@ -329,19 +329,19 @@ import './admin.css';
                 }
             });
             
-            devIconFrame.open();
+            devFaviconFrame.open();
         });
         
         if (removeButton) {
             removeButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                if (!confirm(__('Are you sure you want to remove the development icon?', 'dev-favicon-switcher'))) {
+                if (!confirm(__('Are you sure you want to remove the dev favicon?', 'dev-favicon-switcher'))) {
                     return;
                 }
                 
-                document.getElementById('dev_icon_id').value = '';
-                document.getElementById('dev-icon-preview').innerHTML = '';
+                document.getElementById('dev_favicon_id').value = '';
+                document.getElementById('dev-favicon-preview').innerHTML = '';
                 this.style.display = 'none';
             });
         }
@@ -374,13 +374,13 @@ import './admin.css';
         if (!form) return;
         
         form.addEventListener('submit', function(e) {
-            const devIconId = document.getElementById('dev_icon_id').value;
+            const devIconId = document.getElementById('dev_favicon_id').value;
             const autoDetect = document.querySelector('input[name*="[auto_detect]"]');
             const devUrls = document.getElementById('dev_urls').value;
             
             // 開発アイコンが未設定の場合は警告
             if (!devIconId) {
-                alert('Please select a development icon before saving.');
+                alert('Please select a dev favicon before saving.');
                 e.preventDefault();
                 return false;
             }

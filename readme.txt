@@ -36,14 +36,14 @@ Dev Favicon Switcher helps you distinguish between your production and developme
 
 1. **Set your production favicon** in Settings > General (if not already set)
 2. **Go to Settings > Dev Favicon**
-3. **Select a development icon** from your media library (or upload a new one)
+3. **Select a dev favicon** from your media library (or upload a new one)
 4. **Enter your development URL** (e.g., https://mysite.local/)
 5. **Click "Check Sizes"** to see if all required icon sizes exist
 6. **Click "Generate Missing Sizes"** if needed
 7. **Save settings**
 
 **Advanced Options:**
-If your production and development icons are stored in different year/month folders (e.g., /2025/10/ vs /2026/01/), you can specify these paths in the "Path Override" section.
+If your production and dev favicons are stored in different year/month folders (e.g., /2025/10/ vs /2026/01/), you can specify these paths in the "Path Override" section.
 
 == Frequently Asked Questions ==
 
@@ -101,7 +101,7 @@ Initial release
 1. Create a monochrome or distinctly colored version of your site icon
 2. Upload it to your media library
 3. Configure Dev Favicon Switcher with:
-   - Development Icon: Your monochrome icon
+   - Dev Favicon: Your monochrome icon
    - Development URL: https://mysite.local/
 4. Click "Generate Missing Sizes"
 5. Save settings

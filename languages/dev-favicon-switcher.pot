@@ -81,7 +81,7 @@ msgid "Development Favicon"
 msgstr ""
 
 #: dev-favicon-switcher.php:518
-msgid "Select Development Icon"
+msgid "Select Dev Favicon"
 msgstr ""
 
 #: dev-favicon-switcher.php:521
@@ -121,12 +121,12 @@ msgid "Save Settings"
 msgstr ""
 
 #: build/admin.js:1
-msgid "Are you sure you want to remove the development icon?"
+msgid "Are you sure you want to remove the dev favicon?"
 msgstr ""
 
 #: build/admin.js:1
 msgid ""
-"Are you sure you want to remove the development icon setting?\n"
+"Are you sure you want to remove the dev favicon setting?\n"
 "\n"
 "(The image file will remain in your media library)"
 msgstr ""
@@ -144,7 +144,7 @@ msgid "Failed to remove icon setting"
 msgstr ""
 
 #: build/admin.js:1
-msgid "Are you sure you want to restore the default development icon?"
+msgid "Are you sure you want to restore the default dev favicon?"
 msgstr ""
 
 #: build/admin.js:1

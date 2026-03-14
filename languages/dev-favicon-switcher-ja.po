@@ -6,7 +6,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
 "POT-Creation-Date: 2026-03-13T13:46:24+01:00\n"
-"PO-Revision-Date: 2026-03-13 21:46+0900\n"
+"PO-Revision-Date: 2026-03-14 15:26+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -94,8 +94,8 @@ msgid "Development Favicon"
 msgstr "開発環境ファビコン"
 
 #: dev-favicon-switcher.php:518
-msgid "Select Development Icon"
-msgstr "開発環境用アイコンを選択"
+msgid "Select Dev Favicon"
+msgstr "開発環境ファビコンを選択"
 
 #: dev-favicon-switcher.php:521
 msgid "Restore Default"
@@ -142,12 +142,12 @@ msgid "Save Settings"
 msgstr "設定の保存"
 
 #: build/admin.js:1
-msgid "Are you sure you want to remove the development icon?"
+msgid "Are you sure you want to remove the dev favicon?"
 msgstr "開発環境ファビコンを削除してよろしいですか？"
 
 #: build/admin.js:1
 msgid ""
-"Are you sure you want to remove the development icon setting?\n"
+"Are you sure you want to remove the dev favicon setting?\n"
 "\n"
 "(The image file will remain in your media library)"
 msgstr ""
@@ -168,7 +168,7 @@ msgid "Failed to remove icon setting"
 msgstr "ファビコン設定の削除に失敗しました"
 
 #: build/admin.js:1
-msgid "Are you sure you want to restore the default development icon?"
+msgid "Are you sure you want to restore the default dev favicon?"
 msgstr "デフォルトの開発環境ファビコンに戻します。よろしいですか？"
 
 #: build/admin.js:1
