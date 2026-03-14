@@ -1,8 +1,7 @@
 {
   "name": "dev-favicon-switcher",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "1.3.13",
+  "description": "Automatically switches favicon (site icon) between production and development environments.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "wp-scripts build src/admin.js",
