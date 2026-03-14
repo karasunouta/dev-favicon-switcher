@@ -85,12 +85,13 @@ import './admin.css';
             // Create media frame with custom cropper
             faviconCropperFrame = wp.media({
                 button: {
-                    text: 'Crop Image',
+                    // WP本体の翻訳文字列を流用。存在しない場合のフォールバックとして独自翻訳も用意
+                    text: (wp.media.view.l10n && wp.media.view.l10n.cropImage) ? wp.media.view.l10n.cropImage : __('Crop image', 'dev-favicon-switcher'),
                     close: false
                 },
                 states: [
                     new wp.media.controller.Library({
-                        title: 'Choose Dev Favicon',
+                        title: __('Choose Dev Favicon', 'dev-favicon-switcher'),
                         library: wp.media.query({ type: 'image' }),
                         multiple: false,
                         date: false,

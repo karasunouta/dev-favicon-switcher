@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: Dev Favicon Switcher 1.3.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
-"POT-Creation-Date: 2026-03-14T08:15:07+01:00\n"
-"PO-Revision-Date: 2026-03-14 16:15+0900\n"
+"POT-Creation-Date: 2026-03-14T08:46:54+01:00\n"
+"PO-Revision-Date: 2026-03-14 16:47+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -136,6 +136,14 @@ msgstr ""
 #: dev-favicon-switcher.php:540
 msgid "Save Settings"
 msgstr "設定の保存"
+
+#: build/admin.js:1
+msgid "Crop image"
+msgstr "画像切り抜き"
+
+#: build/admin.js:1
+msgid "Choose Dev Favicon"
+msgstr "開発環境ファビコンの選択"
 
 #: build/admin.js:1
 msgid "Are you sure you want to restore the default dev favicon?"
