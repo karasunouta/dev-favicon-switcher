@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.13
+ * Version: 1.4.0
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,13 +27,12 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.13';
+	const VERSION = '1.4.0';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
 
 	public function __construct() {
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
@@ -64,13 +63,6 @@ class Dev_Favicon_Switcher {
 		add_action( 'activated_plugin', array( $this, 'redirect_after_activation' ) );
 	}
 
-	public function load_textdomain() {
-		load_plugin_textdomain(
-			'dev-favicon-switcher',
-			false,
-			dirname( plugin_basename( __FILE__ ) ) . '/languages'
-		);
-	}
 
 	public function add_settings_page() {
 		add_options_page(
@@ -135,7 +127,7 @@ class Dev_Favicon_Switcher {
 	public function add_settings_link( array $links ): array {
 		$settings_url = admin_url( "admin.php?page={$this->page_slug}" );
 
-		$settings_link = '<a href="' . esc_url( $settings_url ) . '">' . __( 'Settings' ) . '</a>';
+		$settings_link = '<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Settings', 'dev-favicon-switcher' ) . '</a>';
 
 		// 行の先頭に追加
 		array_unshift( $links, $settings_link );
@@ -153,22 +145,22 @@ class Dev_Favicon_Switcher {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
 		}
 
+		if ( ! isset( $_POST['id'] ) ) {
+			wp_send_json_error( array( 'message' => 'Missing attachment ID' ) );
+		}
 		$attachment_id = absint( $_POST['id'] );
 
 		// cropDetailsが存在しない場合はエラー
 		if ( empty( $_POST['cropDetails'] ) ) {
-			error_log( 'Dev Favicon: cropDetails is missing from request' );
 			wp_send_json_error( array( 'message' => 'Crop details missing' ) );
 		}
 
-		$crop_details = json_decode( stripslashes( $_POST['cropDetails'] ), true );
+		$sanitize_crop_details = sanitize_text_field( wp_unslash( $_POST['cropDetails'] ) );
+		$crop_details          = json_decode( $sanitize_crop_details, true );
 
 		if ( ! $crop_details || ! isset( $crop_details['x1'] ) ) {
-			error_log( 'Dev Favicon: Failed to parse cropDetails' );
 			wp_send_json_error( array( 'message' => 'Invalid crop details' ) );
 		}
-
-		error_log( 'Dev Favicon: Cropping with details - ' . print_r( $crop_details, true ) );
 
 		// 元画像の情報を取得
 		$original_file     = get_attached_file( $attachment_id );
@@ -188,7 +180,6 @@ class Dev_Favicon_Switcher {
 		);
 
 		if ( is_wp_error( $cropped ) ) {
-			error_log( 'Dev Favicon: Crop failed - ' . $cropped->get_error_message() );
 			wp_send_json_error( array( 'message' => $cropped->get_error_message() ) );
 		}
 
@@ -196,11 +187,7 @@ class Dev_Favicon_Switcher {
 		$upload_dir = wp_upload_dir();
 		$target_dir = $upload_dir['basedir'] . '/dev-favicon-switcher';
 		if ( ! file_exists( $target_dir ) ) {
-			if ( function_exists( 'wp_mkdir_p' ) ) {
-				wp_mkdir_p( $target_dir );
-			} else {
-				@mkdir( $target_dir, 0755, true );
-			}
+			wp_mkdir_p( $target_dir );
 		}
 
 		// 希望するファイル名を生成（croppedプレフィックス + タイムスタンプ付与）
@@ -209,8 +196,12 @@ class Dev_Favicon_Switcher {
 		$target_path      = $target_dir . '/' . $desired_filename;
 
 		// 一時ファイルを目的の場所（専用フォルダ）に移動
-		if ( ! @rename( $cropped, $target_path ) ) {
-			@unlink( $cropped );
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		WP_Filesystem();
+		global $wp_filesystem;
+
+		if ( ! $wp_filesystem->move( $cropped, $target_path ) ) {
+			wp_delete_file( $cropped );
 			wp_send_json_error( array( 'message' => 'Failed to move cropped file' ) );
 		}
 
@@ -227,7 +218,7 @@ class Dev_Favicon_Switcher {
 		$new_attachment_id = wp_insert_attachment( $attachment, $target_path );
 
 		if ( is_wp_error( $new_attachment_id ) ) {
-			@unlink( $target_path );
+			wp_delete_file( $target_path );
 			wp_send_json_error( array( 'message' => $new_attachment_id->get_error_message() ) );
 		}
 
@@ -243,12 +234,8 @@ class Dev_Favicon_Switcher {
 		$result   = $this->generate_favicon_sizes( $new_attachment_id );
 
 		if ( is_wp_error( $result ) ) {
-			error_log( 'Dev Favicon: Failed to generate sizes - ' . $result->get_error_message() );
-		} else {
-			error_log( 'Dev Favicon: Generated sizes - ' . print_r( $result, true ) );
+			// Do nothing or handle error gracefully
 		}
-
-		error_log( 'Dev Favicon: Crop successful - ID: ' . $new_attachment_id . ', File: ' . $desired_filename );
 
 		// レスポンス生成
 		$response = wp_prepare_attachment_for_js( $new_attachment_id );
@@ -279,16 +266,11 @@ class Dev_Favicon_Switcher {
 
 		// 独自のサブディレクトリを作成
 		if ( ! file_exists( $target_dir ) ) {
-			if ( function_exists( 'wp_mkdir_p' ) ) {
-				wp_mkdir_p( $target_dir );
-			} else {
-				@mkdir( $target_dir, 0755, true );
-			}
+			wp_mkdir_p( $target_dir );
 		}
 
 		// プラグインから uploads に画像をコピー
 		if ( ! copy( $default_icon_path, $target_path ) ) {
-			error_log( 'Dev Favicon: Failed to copy default icon to uploads directory.' );
 			wp_send_json_error( 'Failed to copy default icon to uploads directory.' );
 		}
 
@@ -301,7 +283,6 @@ class Dev_Favicon_Switcher {
 
 		$attachment_id = wp_insert_attachment( $attachment, $target_path );
 		if ( is_wp_error( $attachment_id ) ) {
-			error_log( 'Dev Favicon: Failed to insert default icon to media library.' );
 			wp_send_json_error( 'Failed to insert default icon to media library.' );
 		}
 
@@ -315,7 +296,7 @@ class Dev_Favicon_Switcher {
 		// ファビコン専用のリサイズ版画像を生成
 		$result = $this->generate_favicon_sizes( $attachment_id );
 		if ( is_wp_error( $result ) ) {
-			error_log( 'Dev Favicon: Failed to generate default icon sizes - ' . $result->get_error_message() );
+			// Do nothing or handle error gracefully
 		}
 
 		// URLを取得してクライアントに返す
@@ -406,11 +387,11 @@ class Dev_Favicon_Switcher {
 
 		?>
 		<div class="wrap">
-			<h1><?php _e( 'Dev Favicon Switcher Settings', 'dev-favicon-switcher' ); ?></h1>
+			<h1><?php esc_html_e( 'Dev Favicon Switcher Settings', 'dev-favicon-switcher' ); ?></h1>
 			
 			<?php if ( $this->is_dev_environment( $settings ) ) : ?>
 				<div class="notice notice-info">
-					<p><?php _e( 'Development environment detected.', 'dev-favicon-switcher' ); ?></p>
+					<p><?php esc_html_e( 'Development environment detected.', 'dev-favicon-switcher' ); ?></p>
 				</div>
 				<?php
 		endif;
@@ -423,18 +404,18 @@ class Dev_Favicon_Switcher {
 					<!-- Enable/Disable Switch (一番上に配置) -->
 					<tr>
 						<th scope="row">
-							<?php _e( 'Plugin Status', 'dev-favicon-switcher' ); ?>
+							<?php esc_html_e( 'Plugin Status', 'dev-favicon-switcher' ); ?>
 						</th>
 						<td>
 							<label>
 								<input type="checkbox" 
-									name="<?php echo $this->option_name; ?>[enabled]" 
+									name="<?php echo esc_attr( $this->option_name ); ?>[enabled]" 
 									value="1" 
 									<?php checked( $settings['enabled'], '1' ); ?>>
-								<strong><?php _e( 'Enable development favicon switching', 'dev-favicon-switcher' ); ?></strong>
+								<strong><?php esc_html_e( 'Enable development favicon switching', 'dev-favicon-switcher' ); ?></strong>
 							</label>
 							<p class="description">
-								<?php _e( 'Uncheck this to temporarily disable favicon switching without losing your settings. Useful for testing or presentations.', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Uncheck this to temporarily disable favicon switching without losing your settings. Useful for testing or presentations.', 'dev-favicon-switcher' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -442,7 +423,7 @@ class Dev_Favicon_Switcher {
 					<!-- Production Icon (Read-only) -->
 					<tr>
 						<th scope="row">
-							<?php _e( 'Production Favicon', 'dev-favicon-switcher' ); ?>
+							<?php esc_html_e( 'Production Favicon', 'dev-favicon-switcher' ); ?>
 						</th>
 						<td>
 							<?php if ( $current_icon_url ) : ?>
@@ -451,7 +432,7 @@ class Dev_Favicon_Switcher {
 								<p class="description">
 									<?php
 									/* translators: %s: URL to the General Settings page. */
-									printf( __( 'Current site icon (set in <a href="%s">Settings > General</a>)', 'dev-favicon-switcher' ), admin_url( 'options-general.php' ) );
+									printf( wp_kses( __( 'Current site icon (set in <a href="%s">Settings > General</a>)', 'dev-favicon-switcher' ), array( 'a' => array( 'href' => true ) ) ), esc_url( admin_url( 'options-general.php' ) ) );
 									?>
 								</p>
 								<?php
@@ -460,7 +441,7 @@ class Dev_Favicon_Switcher {
 								<p class="description">
 									<?php
 									/* translators: %s: URL to the General Settings page. */
-									printf( __( 'No site icon set. Please set one in <a href="%s">Settings > General</a>.', 'dev-favicon-switcher' ), admin_url( 'options-general.php' ) );
+									printf( wp_kses( __( 'No site icon set. Please set one in <a href="%s">Settings > General</a>.', 'dev-favicon-switcher' ), array( 'a' => array( 'href' => true ) ) ), esc_url( admin_url( 'options-general.php' ) ) );
 									?>
 								</p>
 							<?php
@@ -472,7 +453,7 @@ class Dev_Favicon_Switcher {
 					<!-- Dev Favicon -->
 					<tr>
 						<th scope="row">
-							<label for="dev_favicon_id"><?php _e( 'Development Favicon', 'dev-favicon-switcher' ); ?></label>
+							<label for="dev_favicon_id"><?php esc_html_e( 'Development Favicon', 'dev-favicon-switcher' ); ?></label>
 						</th>
 						<td>
 							<div id="dev-favicon-preview">
@@ -484,17 +465,17 @@ class Dev_Favicon_Switcher {
 								?>
 							</div>
 							<input type="hidden" 
-									name="<?php echo $this->option_name; ?>[dev_favicon_id]" 
+									name="<?php echo esc_attr( $this->option_name ); ?>[dev_favicon_id]" 
 									id="dev_favicon_id" 
 									value="<?php echo esc_attr( $settings['dev_favicon_id'] ); ?>">
 							<button type="button" class="button" id="select-dev-favicon">
-								<?php _e( 'Select Dev Favicon', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Select Dev Favicon', 'dev-favicon-switcher' ); ?>
 							</button>
 							<button type="button" class="button" style="margin-left:0.5em;" id="restore-default-favicon">
-								<?php _e( 'Restore Default', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Restore Default', 'dev-favicon-switcher' ); ?>
 							</button>
 							<p class="description">
-								<?php _e( 'Choose an icon that will be displayed in development environments.', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Choose an icon that will be displayed in development environments.', 'dev-favicon-switcher' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -502,18 +483,18 @@ class Dev_Favicon_Switcher {
 					<!-- Auto-detect Development Environment -->
 					<tr>
 						<th scope="row">
-							<?php _e( 'Auto-detect Development', 'dev-favicon-switcher' ); ?>
+							<?php esc_html_e( 'Auto-detect Development', 'dev-favicon-switcher' ); ?>
 						</th>
 						<td>
 							<label>
 								<input type="checkbox" 
-										name="<?php echo $this->option_name; ?>[auto_detect]" 
+										name="<?php echo esc_attr( $this->option_name ); ?>[auto_detect]" 
 										value="1" 
 										<?php checked( $settings['auto_detect'], '1' ); ?>>
-								<?php _e( 'Automatically detect .local, .test, .dev domains', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Automatically detect .local, .test, .dev domains', 'dev-favicon-switcher' ); ?>
 							</label>
 							<p class="description">
-								<?php _e( 'Recommended: Enable this to automatically apply development favicon on common development domains.', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Recommended: Enable this to automatically apply development favicon on common development domains.', 'dev-favicon-switcher' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -521,23 +502,23 @@ class Dev_Favicon_Switcher {
 					<!-- Development URLs -->
 					<tr>
 						<th scope="row">
-							<label for="dev_urls"><?php _e( 'Development URLs', 'dev-favicon-switcher' ); ?></label>
+							<label for="dev_urls"><?php esc_html_e( 'Development URLs', 'dev-favicon-switcher' ); ?></label>
 						</th>
 						<td>
-							<textarea name="<?php echo $this->option_name; ?>[dev_urls]" 
+							<textarea name="<?php echo esc_attr( $this->option_name ); ?>[dev_urls]" 
 										id="dev_urls" 
 										rows="4" 
 										class="large-text"
-										placeholder="https://mysite.local/&#10;https://staging.mysite.com/"><?php echo esc_textarea( $settings['dev_urls'] ); ?></textarea>
+										placeholder="https://mysite.example.com/&#10;https://staging.mysite.com/"><?php echo esc_textarea( $settings['dev_urls'] ); ?></textarea>
 							<p class="description">
-								<?php _e( 'Enter development URLs (one per line). The plugin will switch to development favicon when the current URL starts with any of these.', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Enter development URLs (one per line). The plugin will switch to development favicon when the current URL starts with any of these.', 'dev-favicon-switcher' ); ?>
 							</p>
 						</td>
 					</tr>
 					
 				</table>
 				
-				<?php submit_button( __( 'Save Settings', 'dev-favicon-switcher' ) ); ?>
+				<?php submit_button( esc_html__( 'Save Settings', 'dev-favicon-switcher' ) ); ?>
 			</form>
 		</div>
 		<?php
@@ -718,7 +699,7 @@ class Dev_Favicon_Switcher {
 
 		// 自動検出が有効な場合
 		if ( ! empty( $settings['auto_detect'] ) && $settings['auto_detect'] === '1' ) {
-			$hostname       = parse_url( $current_url, PHP_URL_HOST );
+			$hostname       = wp_parse_url( $current_url, PHP_URL_HOST );
 			$dev_extensions = array( '.local', '.test', '.dev' );
 			foreach ( $dev_extensions as $ext ) {
 				if ( strpos( $hostname, $ext ) !== false ) {
@@ -787,8 +768,8 @@ class Dev_Favicon_Switcher {
 		$prod_icon_id = get_option( 'site_icon' );
 		if ( $prod_icon_id ) {
 			$prod_icon_url = wp_get_attachment_url( $prod_icon_id );
-			$prod_path     = dirname( parse_url( $prod_icon_url, PHP_URL_PATH ) );
-			$dev_path      = dirname( parse_url( $dev_favicon_url, PHP_URL_PATH ) );
+			$prod_path     = dirname( wp_parse_url( $prod_icon_url, PHP_URL_PATH ) );
+			$dev_path      = dirname( wp_parse_url( $dev_favicon_url, PHP_URL_PATH ) );
 
 			if ( $prod_path !== $dev_path ) {
 				$url = str_replace( $prod_path, $dev_path, $url );
@@ -825,13 +806,13 @@ class Dev_Favicon_Switcher {
 		$prod_filename      = basename( $prod_icon_url );
 		$prod_extension     = pathinfo( $prod_filename, PATHINFO_EXTENSION );
 		$prod_filename_base = preg_replace( '/\.' . preg_quote( $prod_extension, '/' ) . '$/', '', $prod_filename );
-		$prod_path          = dirname( parse_url( $prod_icon_url, PHP_URL_PATH ) );
+		$prod_path          = dirname( wp_parse_url( $prod_icon_url, PHP_URL_PATH ) );
 
 		// 開発アイコンの情報
 		$dev_filename      = basename( $dev_favicon_url );
 		$dev_extension     = pathinfo( $dev_filename, PATHINFO_EXTENSION );
 		$dev_filename_base = preg_replace( '/\.' . preg_quote( $dev_extension, '/' ) . '$/', '', $dev_filename );
-		$dev_path          = dirname( parse_url( $dev_favicon_url, PHP_URL_PATH ) );
+		$dev_path          = dirname( wp_parse_url( $dev_favicon_url, PHP_URL_PATH ) );
 
 		foreach ( $meta_tags as &$tag ) {
 			// ファイル名を置換（拡張子も動的に対応。クエリストリングは使用しない）
@@ -903,16 +884,11 @@ class Dev_Favicon_Switcher {
 
 		// 独自のサブディレクトリを作成
 		if ( ! file_exists( $target_dir ) ) {
-			if ( function_exists( 'wp_mkdir_p' ) ) {
-				wp_mkdir_p( $target_dir );
-			} else {
-				@mkdir( $target_dir, 0755, true );
-			}
+			wp_mkdir_p( $target_dir );
 		}
 
 		// プラグインから uploads に画像をコピー
 		if ( ! copy( $default_icon_path, $target_path ) ) {
-			error_log( 'Dev Favicon: Failed to copy default icon to uploads directory.' );
 			return;
 		}
 
@@ -925,7 +901,6 @@ class Dev_Favicon_Switcher {
 
 		$attachment_id = wp_insert_attachment( $attachment, $target_path );
 		if ( is_wp_error( $attachment_id ) ) {
-			error_log( 'Dev Favicon: Failed to insert default icon to media library.' );
 			return;
 		}
 
@@ -939,7 +914,7 @@ class Dev_Favicon_Switcher {
 		// ファビコン専用のリサイズ版画像を生成
 		$result = $this->generate_favicon_sizes( $attachment_id );
 		if ( is_wp_error( $result ) ) {
-			error_log( 'Dev Favicon: Failed to generate default icon sizes - ' . $result->get_error_message() );
+			// Do nothing or handle error gracefully
 		}
 
 		// 設定にデプロイされた画像をセット
@@ -976,11 +951,7 @@ class Dev_Favicon_Switcher {
 		$upload_dir = wp_upload_dir();
 		$target_dir = $upload_dir['basedir'] . '/dev-favicon-switcher';
 		if ( ! file_exists( $target_dir ) ) {
-			if ( function_exists( 'wp_mkdir_p' ) ) {
-				wp_mkdir_p( $target_dir );
-			} else {
-				@mkdir( $target_dir, 0755, true );
-			}
+			wp_mkdir_p( $target_dir );
 		}
 
 		// タイムスタンプ付きのファイル名を生成
@@ -994,7 +965,6 @@ class Dev_Favicon_Switcher {
 
 		// ファイルをコピー
 		if ( ! copy( $file_path, $target_path ) ) {
-			error_log( 'Dev Favicon: Failed to clone icon to uploads directory.' );
 			return false;
 		}
 
@@ -1007,8 +977,7 @@ class Dev_Favicon_Switcher {
 
 		$new_attachment_id = wp_insert_attachment( $attachment, $target_path );
 		if ( is_wp_error( $new_attachment_id ) ) {
-			@unlink( $target_path );
-			error_log( 'Dev Favicon: Failed to insert cloned icon to media library.' );
+			wp_delete_file( $target_path );
 			return false;
 		}
 
@@ -1031,8 +1000,9 @@ class Dev_Favicon_Switcher {
 		global $wpdb;
 
 		// guid に dev-favicon-switcher を含むアタッチメントをすべて検索
-		$query   = "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' AND guid LIKE '%/dev-favicon-switcher/%'";
-		$results = $wpdb->get_results( $query );
+		$results = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND guid LIKE %s", 'attachment', '%/dev-favicon-switcher/%' )
+		);
 
 		if ( ! empty( $results ) ) {
 			foreach ( $results as $row ) {
@@ -1044,7 +1014,6 @@ class Dev_Favicon_Switcher {
 
 					// wp_delete_attachment(ID, true) を呼ぶと、連携して関連するメタデータ、元画像、リサイズ済み画像がすべてファイルシステムからも削除される
 					wp_delete_attachment( $id, true );
-					error_log( 'Dev Favicon: Garbage collected unused icon ID ' . $id );
 				}
 			}
 		}
