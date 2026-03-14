@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI: https://www.karasunouta.com/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.10
+ * Version: 1.3.11
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.10';
+	const VERSION = '1.3.11';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -50,9 +50,6 @@ class Dev_Favicon_Switcher {
 
 		// 画像切り抜きAjax handler
 		add_action( 'wp_ajax_dev_favicon_crop_image', array( $this, 'ajax_crop_image' ) );
-
-		// 開発アイコン削除Ajax handler
-		add_action( 'wp_ajax_dev_favicon_remove_icon', array( $this, 'ajax_remove_icon' ) );
 
 		// 開発アイコン復元Ajax handler
 		add_action( 'wp_ajax_dev_favicon_restore_default', array( $this, 'ajax_restore_default' ) );
@@ -256,30 +253,6 @@ class Dev_Favicon_Switcher {
 		// レスポンス生成
 		$response = wp_prepare_attachment_for_js( $new_attachment_id );
 		wp_send_json_success( $response );
-	}
-
-	/**
-	 * 開発アイコン設定削除Ajaxハンドラー
-	 */
-	public function ajax_remove_icon() {
-		check_ajax_referer( 'dev_favicon_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-		}
-
-		// 現在の設定を取得
-		$settings = get_option( $this->option_name, array() );
-
-		// dev_favicon_idのみをクリア（他の設定は保持）
-		$settings['dev_favicon_id'] = '';
-
-		// 設定を更新
-		update_option( $this->option_name, $settings );
-
-		error_log( 'Dev Favicon: Icon setting removed (image file preserved)' );
-
-		wp_send_json_success( array( 'message' => 'Icon setting removed' ) );
 	}
 
 	/**
@@ -519,10 +492,6 @@ class Dev_Favicon_Switcher {
 							</button>
 							<button type="button" class="button" style="margin-left:0.5em;" id="restore-default-favicon">
 								<?php _e( 'Restore Default', 'dev-favicon-switcher' ); ?>
-							</button>
-							<button type="button" class="button" style="margin-left:0.5em;" id="remove-dev-favicon" 
-									<?php echo empty( $settings['dev_favicon_id'] ) ? 'style="display:none;"' : ''; ?>>
-								<?php _e( 'Remove', 'dev-favicon-switcher' ); ?>
 							</button>
 							<p class="description">
 								<?php _e( 'Choose an icon that will be displayed in development environments.', 'dev-favicon-switcher' ); ?>

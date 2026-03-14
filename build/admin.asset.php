@@ -1,1 +1,1 @@
-<?php return array('dependencies' => array('customize-controls', 'media-views', 'wp-i18n'), 'version' => '7012f7faa6de7b6f000d');
+<?php return array('dependencies' => array('customize-controls', 'media-views', 'wp-i18n'), 'version' => 'f9f94851bb0e47d863c9');

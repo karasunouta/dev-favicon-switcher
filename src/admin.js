@@ -33,7 +33,6 @@ import './admin.css';
     // ============================================
     function setupSiteIconCropper() {
         const selectButton = document.getElementById('select-dev-favicon');
-        const removeButton = document.getElementById('remove-dev-favicon');
         
         if (!selectButton) return;
         
@@ -146,9 +145,6 @@ import './admin.css';
             const preview = document.getElementById('dev-favicon-preview');
             preview.innerHTML = `<img src="${attachmentUrl}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
             
-            if (removeButton) {
-                removeButton.style.display = 'inline-block';
-            }
         }
         
         // Calculate crop area for square 1:1 ratio
@@ -198,44 +194,6 @@ import './admin.css';
             return imgSelectOptions;
         }
         
-        // Remove dev icon
-        if (removeButton) {
-            removeButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                if (!confirm(__('Are you sure you want to remove the dev favicon setting?\n\n(The image file will remain in your media library)', 'dev-favicon-switcher'))) {
-                    return;
-                }
-                
-                // クリア処理を実行
-                const formData = new FormData();
-                formData.append('action', 'dev_favicon_remove_icon');
-                formData.append('nonce', devFaviconAjax.nonce);
-                
-                fetch(devFaviconAjax.ajax_url, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // UI更新
-                        document.getElementById('dev_favicon_id').value = '';
-                        document.getElementById('dev-favicon-preview').innerHTML = '';
-                        removeButton.style.display = 'none';
-                        
-                        console.log('Dev favicon setting removed');
-                    } else {
-                        alert(__('Failed to remove icon setting: ', 'dev-favicon-switcher') + (data.data || __('Unknown error', 'dev-favicon-switcher')));
-                    }
-                })
-                .catch(error => {
-                    console.error('Remove error:', error);
-                    alert(__('Failed to remove icon setting', 'dev-favicon-switcher'));
-                });
-            });
-        }
-
         // Restore Default Icon
         const restoreButton = document.getElementById('restore-default-favicon');
         if (restoreButton) {
@@ -291,7 +249,6 @@ import './admin.css';
     // ============================================
     function setupSimpleMediaUploader() {
         const selectButton = document.getElementById('select-dev-favicon');
-        const removeButton = document.getElementById('remove-dev-favicon');
         
         if (!selectButton) return;
         
@@ -324,27 +281,10 @@ import './admin.css';
                 const preview = document.getElementById('dev-favicon-preview');
                 preview.innerHTML = `<img src="${attachment.url}" style="max-width: 64px; height: auto; border: 1px solid #ddd; padding: 5px;">`;
                 
-                if (removeButton) {
-                    removeButton.style.display = 'inline-block';
-                }
             });
             
             devFaviconFrame.open();
         });
-        
-        if (removeButton) {
-            removeButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                if (!confirm(__('Are you sure you want to remove the dev favicon?', 'dev-favicon-switcher'))) {
-                    return;
-                }
-                
-                document.getElementById('dev_favicon_id').value = '';
-                document.getElementById('dev-favicon-preview').innerHTML = '';
-                this.style.display = 'none';
-            });
-        }
     }
     
     // ============================================
