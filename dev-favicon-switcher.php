@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.4.0';
+	const VERSION = '1.4.1';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -529,6 +529,7 @@ class Dev_Favicon_Switcher {
 	 */
 	private function get_required_sizes() {
 		// WordPressコアのデフォルトサイズに対してフィルターを適用し、テーマ等による追加分を取得
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Using core filter name intentionally for compatibility with WordPress site icon system.
 		$sizes = apply_filters( 'site_icon_image_sizes', array( 32, 180, 192, 270 ) );
 		// 重複を排除して整数化
 		return array_unique( array_map( 'absint', $sizes ) );
@@ -730,6 +731,7 @@ class Dev_Favicon_Switcher {
 
 		// 「設定 > 一般」ページでは適用処理回避（サイトアイコン欄に通常のサイトアイコンを表示）
 		global $pagenow;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- State check for page display, no nonce available or required.
 		if ( is_admin() && $pagenow === 'options-general.php' && ! isset( $_GET['page'] ) ) {
 			// ※pageパラメーターがある場合は各プラグイン設定ページなど
 			return $url;
@@ -856,6 +858,7 @@ class Dev_Favicon_Switcher {
 		$this->deploy_default_icon();
 
 		// 複数プラグイン一括有効化の場合はリダイレクトしない
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Check if multi-activation initiated by WP core, no nonce available or required.
 		if ( ! isset( $_GET['activate-multi'] ) ) {
 			// 設定ページのURLを構成
 			$redirect_url = admin_url( "options-general.php?page={$this->page_slug}" );
@@ -997,16 +1000,25 @@ class Dev_Favicon_Switcher {
 	 * @param int $active_attachment_id 現在使用中として保持すべき画像のアタッチメントID（0の場合はすべて削除）
 	 */
 	private function cleanup_unused_dev_favicons( $active_attachment_id ) {
-		global $wpdb;
-
 		// guid に dev-favicon-switcher を含むアタッチメントをすべて検索
-		$results = $wpdb->get_results(
-			$wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND guid LIKE %s", 'attachment', '%/dev-favicon-switcher/%' )
+		$results = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_query'     => array(
+					array(
+						'key'     => '_wp_attached_file',
+						'value'   => 'dev-favicon-switcher/',
+						'compare' => 'LIKE',
+					),
+				),
+			)
 		);
 
 		if ( ! empty( $results ) ) {
-			foreach ( $results as $row ) {
-				$id = absint( $row->ID );
+			foreach ( $results as $id ) {
+				$id = absint( $id );
 				// アクティブなID以外は完全に削除する
 				if ( $id !== absint( $active_attachment_id ) ) {
 					// dev-favicon専用サイズのメタデータは生成時に登録済みのため、
