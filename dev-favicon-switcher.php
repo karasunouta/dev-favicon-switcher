@@ -1,17 +1,17 @@
 <?php
 /**
  * Plugin Name: Dev Favicon Switcher
- * Plugin URI: https://www.karasunouta.com/
+ * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.3.12
+ * Version: 1.3.13
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
  * Author URI: https://www.karasunouta.com/
  * Text Domain: dev-favicon-switcher
  * Domain Path: /languages
- * License: Commercial
- * License URI: https://www.karasunouta.com/
+ * License: GPL2
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
  * Copyright (c) 2026 karasunouta
  * Licensed for two sites use.
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.3.12';
+	const VERSION = '1.3.13';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
