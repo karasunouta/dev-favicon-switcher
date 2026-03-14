@@ -2,7 +2,7 @@
 Contributors: karasunouta
 Tags: favicon, development, staging, site icon, environment
 Requires at least: 5.0
-Tested up to: 6.9.4
+Tested up to: 6.9
 Requires PHP: 7.0
 Stable tag: 1.4.0
 License: GPLv2 or later
