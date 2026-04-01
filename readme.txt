@@ -7,6 +7,7 @@ Requires PHP: 7.0
 Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Repository URI: https://github.com/karasunouta/dev-favicon-switcher
 
 Automatically switches your favicon (site icon) between production and development environments to prevent confusion.
 
@@ -24,6 +25,9 @@ Automatically switches your favicon (site icon) between production and developme
 * **No Frontend Bloat**: Everything works efficiently via standard WordPress filters without adding unnecessary frontend scripts.
 
 Perfect for developers working with local environments, staging servers, and migration tools like All-in-One WP Migration.
+
+Development Source:
+This plugin is developed using npm and webpack. You can find the human-readable source code and build tools in our public repository: https://github.com/karasunouta/dev-favicon-switcher
 
 == Installation ==
 
