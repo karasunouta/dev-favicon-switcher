@@ -60,7 +60,7 @@ import './admin.css';
                     console.log('=== CUSTOM doCrop CALLED ===');
                     
                     const cropDetails = attachment.get('cropDetails');
-                    const cropNonce = devFaviconAjax.crop_nonce;
+                    const cropNonce = dev_favicon_switcher_ajax.crop_nonce;
                     
                     console.log('Crop details:', cropDetails);
                     
@@ -212,9 +212,9 @@ import './admin.css';
 
                 const formData = new FormData();
                 formData.append('action', 'dev_favicon_restore_default');
-                formData.append('nonce', devFaviconAjax.nonce);
+                formData.append('nonce', dev_favicon_switcher_ajax.nonce);
                 
-                fetch(devFaviconAjax.ajax_url, {
+                fetch(dev_favicon_switcher_ajax.ajax_url, {
                     method: 'POST',
                     body: formData
                 })
