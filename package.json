@@ -1,6 +1,6 @@
 {
   "name": "dev-favicon-switcher",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Automatically switches favicon (site icon) between production and development environments.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
