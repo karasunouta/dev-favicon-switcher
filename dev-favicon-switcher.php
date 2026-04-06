@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.4.5
+ * Version: 1.4.6
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.4.5';
+	const VERSION = '1.4.6';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -223,13 +223,9 @@ class Dev_Favicon_Switcher {
 		}
 
 		// メタデータの生成・更新
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-		}
-		wp_update_attachment_metadata(
-			$new_attachment_id,
-			wp_generate_attachment_metadata( $new_attachment_id, $target_path )
-		);
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_metadata = wp_generate_attachment_metadata( $new_attachment_id, $target_path );
+		wp_update_attachment_metadata( $new_attachment_id, $attach_metadata );
 
 		// ファビコン専用サイズを生成
 		$settings = get_option( $this->option_name );
@@ -289,13 +285,9 @@ class Dev_Favicon_Switcher {
 		}
 
 		// メタデータの生成・更新（画像サイズの取得など）
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-		}
-		wp_update_attachment_metadata(
-			$attachment_id,
-			wp_generate_attachment_metadata( $attachment_id, $target_path )
-		);
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_metadata = wp_generate_attachment_metadata( $attachment_id, $target_path );
+		wp_update_attachment_metadata( $attachment_id, $attach_metadata );
 
 		// ファビコン専用のリサイズ版画像を生成
 		$result = $this->generate_favicon_sizes( $attachment_id );
@@ -908,13 +900,9 @@ class Dev_Favicon_Switcher {
 		}
 
 		// メタデータの生成・更新（画像サイズの取得など）
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-		}
-		wp_update_attachment_metadata(
-			$attachment_id,
-			wp_generate_attachment_metadata( $attachment_id, $target_path )
-		);
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_metadata = wp_generate_attachment_metadata( $attachment_id, $target_path );
+		wp_update_attachment_metadata( $attachment_id, $attach_metadata );
 
 		// ファビコン専用のリサイズ版画像を生成
 		$result = $this->generate_favicon_sizes( $attachment_id );
@@ -987,13 +975,9 @@ class Dev_Favicon_Switcher {
 		}
 
 		// メタデータの生成・更新
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-		}
-		wp_update_attachment_metadata(
-			$new_attachment_id,
-			wp_generate_attachment_metadata( $new_attachment_id, $target_path )
-		);
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_metadata = wp_generate_attachment_metadata( $new_attachment_id, $target_path );
+		wp_update_attachment_metadata( $new_attachment_id, $attach_metadata );
 
 		return $new_attachment_id;
 	}
