@@ -373,15 +373,13 @@ class Dev_Favicon_Switcher {
 	}
 
 	public function render_settings_page() {
-		$settings = get_option(
-			$this->option_name,
-			array(
-				'enabled'        => '1',
-				'dev_favicon_id' => '',
-				'dev_urls'       => '',
-				'auto_detect'    => '1',
-			)
+		$defaults = array(
+			'enabled'        => '1',
+			'dev_favicon_id' => '',
+			'dev_urls'       => '',
+			'auto_detect'    => '1',
 		);
+		$settings = wp_parse_args( get_option( $this->option_name, array() ), $defaults );
 
 		$current_icon_id  = get_option( 'site_icon' );
 		$current_icon_url = $current_icon_id ? wp_get_attachment_image_url( $current_icon_id, 'full' ) : '';
