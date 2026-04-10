@@ -52,7 +52,10 @@ Yes! When you upload or select a new development favicon from the media library,
 == Screenshots ==
 
 1. The plugin settings screen where you choose your development icon.
-2. The favicon switching in action on a browser tab.
+2. The default dev favicon already active in browser tabs immediately after activation — no setup required.
+3. Clicking "Select Dev Favicon" opens the Media Library popup to choose a custom image.
+4. Cropping the selected image to a square before setting it as the dev favicon.
+5. The cropped image reflected in the settings screen and automatically applied in the browser tab bar.
 
 == Changelog ==
 
