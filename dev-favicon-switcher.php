@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.5.0
+ * Version: 1.5.1
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.5.0';
+	const VERSION = '1.5.1';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -424,7 +424,7 @@ class Dev_Favicon_Switcher {
 								<input type="checkbox" 
 									name="<?php echo esc_attr( $this->option_name ); ?>[enabled]" 
 									value="1" 
-									<?php checked( $settings['enabled'], '1' ); ?>>
+									<?php checked( $settings['enabled'] ?? '1', '1' ); ?>>
 								<strong><?php esc_html_e( 'Enable development favicon switching', 'dev-favicon-switcher' ); ?></strong>
 							</label>
 							<p class="description">
@@ -480,7 +480,7 @@ class Dev_Favicon_Switcher {
 							<input type="hidden" 
 									name="<?php echo esc_attr( $this->option_name ); ?>[dev_favicon_id]" 
 									id="dev_favicon_id" 
-									value="<?php echo esc_attr( $settings['dev_favicon_id'] ); ?>">
+									value="<?php echo esc_attr( $settings['dev_favicon_id'] ?? '' ); ?>">
 							<button type="button" class="button" id="select-dev-favicon">
 								<?php esc_html_e( 'Select Dev Favicon', 'dev-favicon-switcher' ); ?>
 							</button>
@@ -507,7 +507,7 @@ class Dev_Favicon_Switcher {
 									<input type="text" 
 											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_bg_color]" 
 											id="admin_bar_bg_color" 
-											value="<?php echo esc_attr( $settings['admin_bar_bg_color'] ); ?>" 
+											value="<?php echo esc_attr( $settings['admin_bar_bg_color'] ?? '#385a5d' ); ?>" 
 											class="dev-favicon-color-picker" 
 											data-default-color="#385a5d">
 								</div>
@@ -518,7 +518,7 @@ class Dev_Favicon_Switcher {
 									<input type="text" 
 											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_text_color]" 
 											id="admin_bar_text_color" 
-											value="<?php echo esc_attr( $settings['admin_bar_text_color'] ); ?>" 
+											value="<?php echo esc_attr( $settings['admin_bar_text_color'] ?? '' ); ?>" 
 											class="dev-favicon-color-picker" 
 											data-default-color="">
 								</div>
@@ -527,7 +527,7 @@ class Dev_Favicon_Switcher {
 											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_force]" 
 											id="admin_bar_force" 
 											value="1" 
-											<?php checked( $settings['admin_bar_force'], '1' ); ?>>
+											<?php checked( $settings['admin_bar_force'] ?? '0', '1' ); ?>>
 									<?php esc_html_e( 'Force apply', 'dev-favicon-switcher' ); ?>
 								</label>
 							</div>
@@ -562,7 +562,7 @@ class Dev_Favicon_Switcher {
 								<input type="checkbox" 
 										name="<?php echo esc_attr( $this->option_name ); ?>[auto_detect]" 
 										value="1" 
-										<?php checked( $settings['auto_detect'], '1' ); ?>>
+										<?php checked( $settings['auto_detect'] ?? '1', '1' ); ?>>
 								<?php esc_html_e( 'Automatically detect .local, .test, .dev domains', 'dev-favicon-switcher' ); ?>
 							</label>
 							<p class="description">
@@ -582,7 +582,7 @@ class Dev_Favicon_Switcher {
 										rows="4" 
 										class="large-text"
 										placeholder="https://mysite.example.com/&#10;https://staging.mysite.com/"
-										style="max-width:60em;"><?php echo esc_textarea( $settings['dev_urls'] ); ?></textarea>
+										style="max-width:60em;"><?php echo esc_textarea( $settings['dev_urls'] ?? '' ); ?></textarea>
 							<p class="description">
 								<?php esc_html_e( 'Enter development URLs (one per line). The plugin will switch to development favicon when the current URL starts with any of these.', 'dev-favicon-switcher' ); ?>
 							</p>
