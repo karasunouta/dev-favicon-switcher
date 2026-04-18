@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.4.8
+ * Version: 1.5.0
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.4.8';
+	const VERSION = '1.5.0';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -61,6 +61,10 @@ class Dev_Favicon_Switcher {
 
 		// プラグイン有効化時の初期設定とリダイレクト
 		add_action( 'activated_plugin', array( $this, 'redirect_after_activation' ) );
+
+		// 開発環境時の管理バーCSS注入
+		add_action( 'wp_head', array( $this, 'inject_admin_bar_css' ), 99 );
+		add_action( 'admin_head', array( $this, 'inject_admin_bar_css' ), 99 );
 	}
 
 
@@ -96,6 +100,16 @@ class Dev_Favicon_Switcher {
 
 		// Dev URLs (textarea, one per line)
 		$sanitized['dev_urls'] = ! empty( $input['dev_urls'] ) ? sanitize_textarea_field( $input['dev_urls'] ) : '';
+
+		// Admin Bar Colors
+		$sanitized['admin_bar_bg_color']   = ! empty( $input['admin_bar_bg_color'] ) ? sanitize_hex_color( $input['admin_bar_bg_color'] ) : '';
+		$sanitized['admin_bar_text_color'] = ! empty( $input['admin_bar_text_color'] ) ? sanitize_hex_color( $input['admin_bar_text_color'] ) : '';
+		$sanitized['admin_bar_force']      = ! empty( $input['admin_bar_force'] ) ? '1' : '0';
+
+		// 両方の色がクリアされた場合は自動的に強制適用も外す
+		if ( empty( $sanitized['admin_bar_bg_color'] ) && empty( $sanitized['admin_bar_text_color'] ) ) {
+			$sanitized['admin_bar_force'] = '0';
+		}
 
 		// 古い設定値を取得
 		$old_settings   = get_option( $this->option_name, array() );
@@ -313,7 +327,7 @@ class Dev_Favicon_Switcher {
 		}
 
 		// パスの整理
-		$entry_point    = 'admin';
+		$entry_point    = 'dev-favicon-settings';
 		$asset_path     = plugin_dir_path( __FILE__ ) . "build/{$entry_point}.asset.php";
 		$script_url     = plugins_url( "/build/{$entry_point}.js", __FILE__ );
 		$style_url      = plugins_url( "/build/{$entry_point}.css", __FILE__ );
@@ -326,8 +340,10 @@ class Dev_Favicon_Switcher {
 		}
 		$assets = include $asset_path;
 
-		// WordPress標準のメディアライブラリとクロッパー
+		// WordPress標準のメディアライブラリとクロッパー、カラーピッカー
 		wp_enqueue_media();
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_script( 'wp-color-picker' );
 
 		// 管理画面用JS
 		$script_handle = 'dev-favicon-admin';
@@ -366,10 +382,13 @@ class Dev_Favicon_Switcher {
 
 	public function render_settings_page() {
 		$defaults = array(
-			'enabled'        => '1',
-			'dev_favicon_id' => '',
-			'dev_urls'       => '',
-			'auto_detect'    => '1',
+			'enabled'              => '1',
+			'dev_favicon_id'       => '',
+			'dev_urls'             => '',
+			'auto_detect'          => '1',
+			'admin_bar_bg_color'   => '#385a5d',
+			'admin_bar_text_color' => '',
+			'admin_bar_force'      => '0',
 		);
 		$settings = wp_parse_args( get_option( $this->option_name, array() ), $defaults );
 
@@ -409,7 +428,7 @@ class Dev_Favicon_Switcher {
 								<strong><?php esc_html_e( 'Enable development favicon switching', 'dev-favicon-switcher' ); ?></strong>
 							</label>
 							<p class="description">
-								<?php esc_html_e( 'Uncheck this to temporarily disable favicon switching without losing your settings. Useful for testing or presentations.', 'dev-favicon-switcher' ); ?>
+								<?php esc_html_e( 'Uncheck this to temporarily disable favicon switching and related features without losing your settings. Useful for testing or presentations.', 'dev-favicon-switcher' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -471,6 +490,65 @@ class Dev_Favicon_Switcher {
 							<p class="description">
 								<?php esc_html_e( 'Choose an icon that will be displayed in development environments.', 'dev-favicon-switcher' ); ?>
 							</p>
+						</td>
+					</tr>
+					
+					<!-- Development Admin Bar -->
+					<tr>
+						<th scope="row">
+							<?php esc_html_e( 'Development Admin Bar', 'dev-favicon-switcher' ); ?>
+						</th>
+						<td>
+							<div class="dev-favicon-admin-bar-settings" style="margin-bottom: 1em;">
+								<div style="display: inline-block; margin-right: 1em; vertical-align: bottom;">
+									<label for="admin_bar_bg_color" style="display: block; margin-bottom: 4px;">
+										<?php esc_html_e( 'Background Color', 'dev-favicon-switcher' ); ?>
+									</label>
+									<input type="text" 
+											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_bg_color]" 
+											id="admin_bar_bg_color" 
+											value="<?php echo esc_attr( $settings['admin_bar_bg_color'] ); ?>" 
+											class="dev-favicon-color-picker" 
+											data-default-color="#385a5d">
+								</div>
+								<div style="display: inline-block; margin-right: 1em; vertical-align: bottom;">
+									<label for="admin_bar_text_color" style="display: block; margin-bottom: 4px;">
+										<?php esc_html_e( 'Text Color', 'dev-favicon-switcher' ); ?>
+									</label>
+									<input type="text" 
+											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_text_color]" 
+											id="admin_bar_text_color" 
+											value="<?php echo esc_attr( $settings['admin_bar_text_color'] ); ?>" 
+											class="dev-favicon-color-picker" 
+											data-default-color="">
+								</div>
+								<label style="display: inline-block; vertical-align: bottom; margin-bottom: 15px;" title="<?php esc_attr_e( 'Adds "!important" to CSS rules to aggressively force styles.', 'dev-favicon-switcher' ); ?>">
+									<input type="checkbox" 
+											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_force]" 
+											id="admin_bar_force" 
+											value="1" 
+											<?php checked( $settings['admin_bar_force'], '1' ); ?>>
+									<?php esc_html_e( 'Force apply', 'dev-favicon-switcher' ); ?>
+								</label>
+							</div>
+							
+							<div style="margin-bottom: 1em; padding: 1em 1em 1em 0; background: #fff; border: 1px solid #ccd0d4; max-width:1000px;">
+								<div class="dev-favicon-fake-wpadminbar">
+									<ul class="ab-top-menu">
+										<li class="ab-item"><span class="ab-icon dashicons dashicons-wordpress"></span></li>
+										<li class="ab-item"><span class="ab-icon dashicons dashicons-admin-home"></span><span class="ab-label"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span></li>
+									</ul>
+								</div>
+							</div>
+
+							<div style="margin-top: 1em;">
+								<button type="button" class="button" id="admin-bar-restore-default">
+									<?php esc_html_e( 'Restore Default', 'dev-favicon-switcher' ); ?>
+								</button>
+								<button type="button" class="button" id="admin-bar-apply-wp-default" style="margin-left: 0.5em;">
+									<?php esc_html_e( 'Clear Settings', 'dev-favicon-switcher' ); ?>
+								</button>
+							</div>
 						</td>
 					</tr>
 					
@@ -716,6 +794,36 @@ class Dev_Favicon_Switcher {
 		return false;
 	}
 
+	public function inject_admin_bar_css() {
+		// 開発環境でのみ適用
+		if ( ! $this->is_dev_environment() ) {
+			return;
+		}
+
+		$settings   = get_option( $this->option_name, array() );
+		$bg_color   = isset( $settings['admin_bar_bg_color'] ) ? $settings['admin_bar_bg_color'] : '#385a5d';
+		$text_color = isset( $settings['admin_bar_text_color'] ) ? $settings['admin_bar_text_color'] : '';
+		$force      = ( ! empty( $settings['admin_bar_force'] ) && $settings['admin_bar_force'] === '1' ) ? ' !important' : '';
+
+		// 両方何も設定されていない場合は出力しない
+		if ( empty( $bg_color ) && empty( $text_color ) ) {
+			return;
+		}
+
+		echo '<style id="dev-favicon-admin-bar-css">' . "\n";
+
+		if ( ! empty( $bg_color ) ) {
+			echo '#wpadminbar { background-color: ' . esc_attr( $bg_color ) . $force . '; }' . "\n";
+		}
+
+		if ( ! empty( $text_color ) ) {
+			echo '#wpadminbar, #wpadminbar .ab-item, #wpadminbar a.ab-item, #wpadminbar > #wp-toolbar span.ab-label, #wpadminbar > #wp-toolbar span.noticon { color: ' . esc_attr( $text_color ) . $force . '; }' . "\n";
+			echo '#wpadminbar .ab-icon::before, #wpadminbar .ab-item::before, #wpadminbar #adminbarsearch::before { color: ' . esc_attr( $text_color ) . $force . '; }' . "\n";
+		}
+
+		echo '</style>' . "\n";
+	}
+
 	public function replace_favicon_url( $url ) {
 		// 開発環境以外では独自ファビコンの適用処理回避
 		if ( ! $this->is_dev_environment() ) {
@@ -915,8 +1023,11 @@ class Dev_Favicon_Switcher {
 		$settings                   = get_option(
 			$this->option_name,
 			array(
-				'enabled'     => '1',
-				'auto_detect' => '1',
+				'enabled'              => '1',
+				'auto_detect'          => '1',
+				'admin_bar_bg_color'   => '#385a5d',
+				'admin_bar_text_color' => '',
+				'admin_bar_force'      => '0',
 			)
 		);
 		$settings['dev_favicon_id'] = $attachment_id;

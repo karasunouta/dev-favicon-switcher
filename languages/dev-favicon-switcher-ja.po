@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: Dev Favicon Switcher 1.3.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
-"POT-Creation-Date: 2026-03-14T13:00:35+01:00\n"
-"PO-Revision-Date: 2026-03-14 21:01+0900\n"
+"POT-Creation-Date: 2026-04-18T18:23:09+02:00\n"
+"PO-Revision-Date: 2026-04-19 01:24+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -17,9 +17,9 @@ msgstr ""
 "X-Domain: dev-favicon-switcher\n"
 
 #. Plugin Name of the plugin
-#: dev-favicon-switcher.php dev-favicon-switcher.php:69
+#: dev-favicon-switcher.php dev-favicon-switcher.php:73
 msgid "Dev Favicon Switcher"
-msgstr ""
+msgstr "Dev Favicon Switcher"
 
 #. Description of the plugin
 #: dev-favicon-switcher.php
@@ -33,58 +33,58 @@ msgstr ""
 #. Author of the plugin
 #: dev-favicon-switcher.php
 msgid "karasunouta"
-msgstr ""
+msgstr "karasunouta"
 
 #. Author URI of the plugin
 #: dev-favicon-switcher.php
 msgid "https://www.karasunouta.com/"
-msgstr ""
+msgstr "https://www.karasunouta.com/"
 
-#: dev-favicon-switcher.php:70
+#: dev-favicon-switcher.php:74
 msgid "Dev Favicon"
 msgstr "開発環境ファビコン"
 
-#: dev-favicon-switcher.php:130
+#: dev-favicon-switcher.php:144
 msgid "Settings"
 msgstr "設定"
 
-#: dev-favicon-switcher.php:390
+#: dev-favicon-switcher.php:403
 msgid "Dev Favicon Switcher Settings"
 msgstr "Dev Favicon Switcher 設定"
 
-#: dev-favicon-switcher.php:394
+#: dev-favicon-switcher.php:407
 msgid "Development environment detected."
 msgstr "開発環境を検出しました。"
 
-#: dev-favicon-switcher.php:407
+#: dev-favicon-switcher.php:420
 msgid "Plugin Status"
 msgstr "プラグインステータス"
 
-#: dev-favicon-switcher.php:415
+#: dev-favicon-switcher.php:428
 msgid "Enable development favicon switching"
 msgstr "開発環境ファビコンへの切り替えを有効化"
 
-#: dev-favicon-switcher.php:418
+#: dev-favicon-switcher.php:431
 msgid ""
-"Uncheck this to temporarily disable favicon switching without losing your "
-"settings. Useful for testing or presentations."
+"Uncheck this to temporarily disable favicon switching and related features "
+"without losing your settings. Useful for testing or presentations."
 msgstr ""
-"チェックを外すと設定を維持したままファビコンの切り替え機能を一時的に無効化し"
-"ます。テストやプレゼンテーションの際に有用です。"
+"チェックを外すと設定を維持したままファビコンの切り替え機能および関連機能を一"
+"時的に無効化します。テストやプレゼンテーションの際に有用です。"
 
-#: dev-favicon-switcher.php:426
+#: dev-favicon-switcher.php:439
 msgid "Production Favicon"
 msgstr "実働環境ファビコン"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:435
+#: dev-favicon-switcher.php:448
 #, php-format
 msgid "Current site icon (set in <a href=\"%s\">Settings > General</a>)"
 msgstr ""
 "現在のサイトアイコン ( <a href=\"%s\">設定 > 一般</a> から変更できます)"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:444
+#: dev-favicon-switcher.php:457
 #, php-format
 msgid ""
 "No site icon set. Please set one in <a href=\"%s\">Settings > General</a>."
@@ -92,31 +92,55 @@ msgstr ""
 "WordPressサイトアイコンが未設定です。先に <a href=\"%s\">設定 > 一般</a> から"
 "設定してください。"
 
-#: dev-favicon-switcher.php:456
+#: dev-favicon-switcher.php:469
 msgid "Development Favicon"
 msgstr "開発環境ファビコン"
 
-#: dev-favicon-switcher.php:472
+#: dev-favicon-switcher.php:485
 msgid "Select Dev Favicon"
 msgstr "開発環境ファビコンを選択"
 
-#: dev-favicon-switcher.php:475
+#: dev-favicon-switcher.php:488 dev-favicon-switcher.php:546
 msgid "Restore Default"
 msgstr "デフォルトに復元"
 
-#: dev-favicon-switcher.php:478
+#: dev-favicon-switcher.php:491
 msgid "Choose an icon that will be displayed in development environments."
 msgstr "開発環境で表示されるアイコン画像を選択してください。"
 
-#: dev-favicon-switcher.php:486
+#: dev-favicon-switcher.php:499
+msgid "Development Admin Bar"
+msgstr "開発環境の管理バー"
+
+#: dev-favicon-switcher.php:505
+msgid "Background Color"
+msgstr "背景色"
+
+#: dev-favicon-switcher.php:516
+msgid "Text Color"
+msgstr "文字色"
+
+#: dev-favicon-switcher.php:525
+msgid "Adds \"!important\" to CSS rules to aggressively force styles."
+msgstr "CSSルールに「!important」を追加して優先的に適用します。"
+
+#: dev-favicon-switcher.php:531
+msgid "Force apply"
+msgstr "強制的に反映"
+
+#: dev-favicon-switcher.php:549
+msgid "Clear Settings"
+msgstr "設定を解除"
+
+#: dev-favicon-switcher.php:558
 msgid "Auto-detect Development"
 msgstr "開発環境の自動検出"
 
-#: dev-favicon-switcher.php:494
+#: dev-favicon-switcher.php:566
 msgid "Automatically detect .local, .test, .dev domains"
 msgstr "「.local」や「.test」で終わるドメインを自動的に開発環境と判定"
 
-#: dev-favicon-switcher.php:497
+#: dev-favicon-switcher.php:569
 msgid ""
 "Recommended: Enable this to automatically apply development favicon on "
 "common development domains."
@@ -124,11 +148,11 @@ msgstr ""
 "推奨: 開発環境ファビコンを一般的な開発環境で自動適用します。有効にしておくこ"
 "とをお勧めします。"
 
-#: dev-favicon-switcher.php:505
+#: dev-favicon-switcher.php:577
 msgid "Development URLs"
 msgstr "開発環境URL"
 
-#: dev-favicon-switcher.php:514
+#: dev-favicon-switcher.php:587
 msgid ""
 "Enter development URLs (one per line). The plugin will switch to development "
 "favicon when the current URL starts with any of these."
@@ -136,27 +160,27 @@ msgstr ""
 "開発環境のURLを入力してください（改行区切り）。プラグインは前方一致でURLを検"
 "証し、一致した場合は開発環境ファビコンを適用します。"
 
-#: dev-favicon-switcher.php:521
+#: dev-favicon-switcher.php:594
 msgid "Save Settings"
 msgstr "設定の保存"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Crop image"
 msgstr "画像切り抜き"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Choose Dev Favicon"
 msgstr "開発環境ファビコンの選択"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Are you sure you want to restore the default dev favicon?"
 msgstr "デフォルトの開発環境ファビコンに戻します。よろしいですか？"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Restoring..."
 msgstr "復元中…"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid ""
 "Default icon restored successfully. Please click \"Save Settings\" to apply "
 "changes."
@@ -164,19 +188,19 @@ msgstr ""
 "デフォルト開発環境ファビコンへの復元に成功しました。「設定の保存」をクリック"
 "すると適用されます。"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Failed to restore default icon: "
 msgstr "デフォルト開発環境ファビコンの復元に失敗しました:"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Unknown error"
 msgstr "Unknown エラー"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "Failed to restore default icon."
 msgstr "デフォルト開発環境ファビコンの復元に失敗しました。"
 
-#: build/admin.js:1
+#: build/dev-favicon-settings.js:1
 msgid "e.g., %s"
 msgstr "例: %s"
 

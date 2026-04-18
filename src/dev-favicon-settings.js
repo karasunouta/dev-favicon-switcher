@@ -5,7 +5,7 @@
 import 'customize-controls';
 import 'media-views';
 import { __, sprintf } from '@wordpress/i18n';
-import './admin.css';
+import './dev-favicon-settings.css';
 
 (function() {
     'use strict';
@@ -23,6 +23,9 @@ import './admin.css';
         
         // Dev URL auto-suggestion
         suggestDevUrl();
+        
+        // Admin Bar Colors Logic
+        setupAdminBarColors();
         
         // Form validation
         setupFormValidation();
@@ -307,6 +310,71 @@ import './admin.css';
         }
     }
     
+    // ============================================
+    // Admin Bar Colors
+    // ============================================
+    function setupAdminBarColors() {
+        if (typeof jQuery === 'undefined' || typeof jQuery.fn.wpColorPicker === 'undefined') {
+            return;
+        }
+
+        const $bgColor = jQuery('#admin_bar_bg_color');
+        const $textColor = jQuery('#admin_bar_text_color');
+        const $preview = jQuery('.dev-favicon-fake-wpadminbar');
+
+        function updatePreview() {
+            // Read from input val to be safe
+            const bg = $bgColor.val() || '';
+            const text = $textColor.val() || '';
+            
+            if (bg) {
+                $preview.css('background-color', bg);
+            } else {
+                $preview.css('background-color', '#1d2327'); // WP Default
+            }
+
+            if (text) {
+                $preview.css('color', text);
+            } else {
+                $preview.css('color', '#f0f0f1'); // WP Default
+            }
+        }
+
+        const pickerOptions = {
+            change: function(event, ui) {
+                // setTimeout ensures value is updated in DOM
+                setTimeout(updatePreview, 10);
+            },
+            clear: function() {
+                setTimeout(updatePreview, 10);
+            }
+        };
+
+        $bgColor.wpColorPicker(pickerOptions);
+        $textColor.wpColorPicker(pickerOptions);
+
+        updatePreview();
+
+        // Restore Default Button
+        jQuery('#admin-bar-restore-default').on('click', function(e) {
+            e.preventDefault();
+            $bgColor.wpColorPicker('color', '#385a5d');
+            $textColor.val('').trigger('change');
+            $textColor.siblings('.wp-picker-clear').click(); // ensure clear
+            updatePreview();
+        });
+
+        // Apply WP Defaults Button
+        jQuery('#admin-bar-apply-wp-default').on('click', function(e) {
+            e.preventDefault();
+            $bgColor.val('').trigger('change');
+            $bgColor.siblings('.wp-picker-clear').click();
+            $textColor.val('').trigger('change');
+            $textColor.siblings('.wp-picker-clear').click();
+            updatePreview();
+        });
+    }
+
     // ============================================
     // Form Validation
     // ============================================

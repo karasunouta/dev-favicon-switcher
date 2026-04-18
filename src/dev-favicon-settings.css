@@ -136,3 +136,42 @@
         max-width: 100%;
     }
 }
+
+/* Admin Bar Preview Styles */
+.dev-favicon-fake-wpadminbar {
+    height: 32px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-weight: 400;
+    background: #1d2327; /* WP Default */
+    color: #f0f0f1;      /* WP Default */
+    display: flex;
+    align-items: center;
+}
+
+.dev-favicon-fake-wpadminbar .ab-top-menu {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    height: 100%;
+}
+
+.dev-favicon-fake-wpadminbar .ab-item {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.dev-favicon-fake-wpadminbar .ab-icon {
+    font-size: 20px;
+    margin-right: 4px;
+    line-height: 1;
+}
+
+.dev-favicon-fake-wpadminbar .ab-label {
+    font-size: 13px;
+}

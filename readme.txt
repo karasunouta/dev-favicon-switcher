@@ -4,7 +4,7 @@ Tags: favicon, development, staging, site icon, environment
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 1.4.8
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Repository URI: https://github.com/karasunouta/dev-favicon-switcher
@@ -58,6 +58,15 @@ Yes! When you upload or select a new development favicon from the media library,
 5. The cropped image reflected in the settings screen and automatically applied in the browser tab bar.
 
 == Changelog ==
+
+= 1.5.0 =
+* Added admin bar styling options.
+* Added "Force apply" option for admin bar styles.
+* Added "Restore Default" button for admin bar styles.
+* Added "Clear Settings" button for admin bar styles.
+
+= 1.4.7 =
+* Published on WP.org
 
 = 1.3.12 =
 * Added a refined settings UI with standard WordPress styling.
