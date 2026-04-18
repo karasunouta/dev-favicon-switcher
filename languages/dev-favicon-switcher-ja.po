@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: Dev Favicon Switcher 1.3.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
-"POT-Creation-Date: 2026-04-18T18:23:09+02:00\n"
-"PO-Revision-Date: 2026-04-19 01:24+0900\n"
+"POT-Creation-Date: 2026-04-18T19:32:01+02:00\n"
+"PO-Revision-Date: 2026-04-19 02:32+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Domain: dev-favicon-switcher\n"
 
 #. Plugin Name of the plugin
-#: dev-favicon-switcher.php dev-favicon-switcher.php:73
+#: dev-favicon-switcher.php dev-favicon-switcher.php:78
 msgid "Dev Favicon Switcher"
 msgstr "Dev Favicon Switcher"
 
@@ -40,31 +40,39 @@ msgstr "karasunouta"
 msgid "https://www.karasunouta.com/"
 msgstr "https://www.karasunouta.com/"
 
-#: dev-favicon-switcher.php:74
+#: dev-favicon-switcher.php:79
 msgid "Dev Favicon"
 msgstr "開発環境ファビコン"
 
-#: dev-favicon-switcher.php:144
+#: dev-favicon-switcher.php:149
 msgid "Settings"
 msgstr "設定"
 
-#: dev-favicon-switcher.php:403
+#: dev-favicon-switcher.php:408
 msgid "Dev Favicon Switcher Settings"
 msgstr "Dev Favicon Switcher 設定"
 
-#: dev-favicon-switcher.php:407
+#: dev-favicon-switcher.php:414
 msgid "Development environment detected."
 msgstr "開発環境を検出しました。"
 
-#: dev-favicon-switcher.php:420
+#: dev-favicon-switcher.php:415
+msgid ""
+"Development environment not detected. The settings below are not currently "
+"applied to this site."
+msgstr ""
+"開発環境が検出されませんでした。以下の設定は現在このサイトに適用されていませ"
+"ん。"
+
+#: dev-favicon-switcher.php:427
 msgid "Plugin Status"
 msgstr "プラグインステータス"
 
-#: dev-favicon-switcher.php:428
+#: dev-favicon-switcher.php:435
 msgid "Enable development favicon switching"
 msgstr "開発環境ファビコンへの切り替えを有効化"
 
-#: dev-favicon-switcher.php:431
+#: dev-favicon-switcher.php:438
 msgid ""
 "Uncheck this to temporarily disable favicon switching and related features "
 "without losing your settings. Useful for testing or presentations."
@@ -72,19 +80,19 @@ msgstr ""
 "チェックを外すと設定を維持したままファビコンの切り替え機能および関連機能を一"
 "時的に無効化します。テストやプレゼンテーションの際に有用です。"
 
-#: dev-favicon-switcher.php:439
+#: dev-favicon-switcher.php:446
 msgid "Production Favicon"
 msgstr "実働環境ファビコン"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:448
+#: dev-favicon-switcher.php:455
 #, php-format
 msgid "Current site icon (set in <a href=\"%s\">Settings > General</a>)"
 msgstr ""
 "現在のサイトアイコン ( <a href=\"%s\">設定 > 一般</a> から変更できます)"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:457
+#: dev-favicon-switcher.php:464
 #, php-format
 msgid ""
 "No site icon set. Please set one in <a href=\"%s\">Settings > General</a>."
@@ -92,55 +100,55 @@ msgstr ""
 "WordPressサイトアイコンが未設定です。先に <a href=\"%s\">設定 > 一般</a> から"
 "設定してください。"
 
-#: dev-favicon-switcher.php:469
+#: dev-favicon-switcher.php:476
 msgid "Development Favicon"
 msgstr "開発環境ファビコン"
 
-#: dev-favicon-switcher.php:485
+#: dev-favicon-switcher.php:492
 msgid "Select Dev Favicon"
 msgstr "開発環境ファビコンを選択"
 
-#: dev-favicon-switcher.php:488 dev-favicon-switcher.php:546
+#: dev-favicon-switcher.php:495 dev-favicon-switcher.php:553
 msgid "Restore Default"
 msgstr "デフォルトに復元"
 
-#: dev-favicon-switcher.php:491
+#: dev-favicon-switcher.php:498
 msgid "Choose an icon that will be displayed in development environments."
 msgstr "開発環境で表示されるアイコン画像を選択してください。"
 
-#: dev-favicon-switcher.php:499
+#: dev-favicon-switcher.php:506
 msgid "Development Admin Bar"
 msgstr "開発環境の管理バー"
 
-#: dev-favicon-switcher.php:505
+#: dev-favicon-switcher.php:512
 msgid "Background Color"
 msgstr "背景色"
 
-#: dev-favicon-switcher.php:516
+#: dev-favicon-switcher.php:523
 msgid "Text Color"
 msgstr "文字色"
 
-#: dev-favicon-switcher.php:525
+#: dev-favicon-switcher.php:532
 msgid "Adds \"!important\" to CSS rules to aggressively force styles."
 msgstr "CSSルールに「!important」を追加して優先的に適用します。"
 
-#: dev-favicon-switcher.php:531
+#: dev-favicon-switcher.php:538
 msgid "Force apply"
 msgstr "強制的に反映"
 
-#: dev-favicon-switcher.php:549
+#: dev-favicon-switcher.php:556
 msgid "Clear Settings"
 msgstr "設定を解除"
 
-#: dev-favicon-switcher.php:558
+#: dev-favicon-switcher.php:565
 msgid "Auto-detect Development"
 msgstr "開発環境の自動検出"
 
-#: dev-favicon-switcher.php:566
+#: dev-favicon-switcher.php:573
 msgid "Automatically detect .local, .test, .dev domains"
 msgstr "「.local」や「.test」で終わるドメインを自動的に開発環境と判定"
 
-#: dev-favicon-switcher.php:569
+#: dev-favicon-switcher.php:576
 msgid ""
 "Recommended: Enable this to automatically apply development favicon on "
 "common development domains."
@@ -148,11 +156,11 @@ msgstr ""
 "推奨: 開発環境ファビコンを一般的な開発環境で自動適用します。有効にしておくこ"
 "とをお勧めします。"
 
-#: dev-favicon-switcher.php:577
+#: dev-favicon-switcher.php:584
 msgid "Development URLs"
 msgstr "開発環境URL"
 
-#: dev-favicon-switcher.php:587
+#: dev-favicon-switcher.php:594
 msgid ""
 "Enter development URLs (one per line). The plugin will switch to development "
 "favicon when the current URL starts with any of these."
@@ -160,7 +168,7 @@ msgstr ""
 "開発環境のURLを入力してください（改行区切り）。プラグインは前方一致でURLを検"
 "証し、一致した場合は開発環境ファビコンを適用します。"
 
-#: dev-favicon-switcher.php:594
+#: dev-favicon-switcher.php:601
 msgid "Save Settings"
 msgstr "設定の保存"
 

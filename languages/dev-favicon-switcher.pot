@@ -2,21 +2,21 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Dev Favicon Switcher 1.4.10\n"
+"Project-Id-Version: Dev Favicon Switcher 1.5.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-switcher\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-18T18:23:09+02:00\n"
+"POT-Creation-Date: 2026-04-18T19:32:01+02:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: dev-favicon-switcher\n"
 
 #. Plugin Name of the plugin
 #: dev-favicon-switcher.php
-#: dev-favicon-switcher.php:73
+#: dev-favicon-switcher.php:78
 msgid "Dev Favicon Switcher"
 msgstr ""
 
@@ -35,112 +35,116 @@ msgstr ""
 msgid "https://www.karasunouta.com/"
 msgstr ""
 
-#: dev-favicon-switcher.php:74
+#: dev-favicon-switcher.php:79
 msgid "Dev Favicon"
 msgstr ""
 
-#: dev-favicon-switcher.php:144
+#: dev-favicon-switcher.php:149
 msgid "Settings"
 msgstr ""
 
-#: dev-favicon-switcher.php:403
+#: dev-favicon-switcher.php:408
 msgid "Dev Favicon Switcher Settings"
 msgstr ""
 
-#: dev-favicon-switcher.php:407
+#: dev-favicon-switcher.php:414
 msgid "Development environment detected."
 msgstr ""
 
-#: dev-favicon-switcher.php:420
+#: dev-favicon-switcher.php:415
+msgid "Development environment not detected. The settings below are not currently applied to this site."
+msgstr ""
+
+#: dev-favicon-switcher.php:427
 msgid "Plugin Status"
 msgstr ""
 
-#: dev-favicon-switcher.php:428
+#: dev-favicon-switcher.php:435
 msgid "Enable development favicon switching"
 msgstr ""
 
-#: dev-favicon-switcher.php:431
+#: dev-favicon-switcher.php:438
 msgid "Uncheck this to temporarily disable favicon switching and related features without losing your settings. Useful for testing or presentations."
 msgstr ""
 
-#: dev-favicon-switcher.php:439
+#: dev-favicon-switcher.php:446
 msgid "Production Favicon"
 msgstr ""
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:448
+#: dev-favicon-switcher.php:455
 #, php-format
 msgid "Current site icon (set in <a href=\"%s\">Settings > General</a>)"
 msgstr ""
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:457
+#: dev-favicon-switcher.php:464
 #, php-format
 msgid "No site icon set. Please set one in <a href=\"%s\">Settings > General</a>."
 msgstr ""
 
-#: dev-favicon-switcher.php:469
+#: dev-favicon-switcher.php:476
 msgid "Development Favicon"
 msgstr ""
 
-#: dev-favicon-switcher.php:485
+#: dev-favicon-switcher.php:492
 msgid "Select Dev Favicon"
 msgstr ""
 
-#: dev-favicon-switcher.php:488
-#: dev-favicon-switcher.php:546
+#: dev-favicon-switcher.php:495
+#: dev-favicon-switcher.php:553
 msgid "Restore Default"
 msgstr ""
 
-#: dev-favicon-switcher.php:491
+#: dev-favicon-switcher.php:498
 msgid "Choose an icon that will be displayed in development environments."
 msgstr ""
 
-#: dev-favicon-switcher.php:499
+#: dev-favicon-switcher.php:506
 msgid "Development Admin Bar"
 msgstr ""
 
-#: dev-favicon-switcher.php:505
+#: dev-favicon-switcher.php:512
 msgid "Background Color"
 msgstr ""
 
-#: dev-favicon-switcher.php:516
+#: dev-favicon-switcher.php:523
 msgid "Text Color"
 msgstr ""
 
-#: dev-favicon-switcher.php:525
+#: dev-favicon-switcher.php:532
 msgid "Adds \"!important\" to CSS rules to aggressively force styles."
 msgstr ""
 
-#: dev-favicon-switcher.php:531
+#: dev-favicon-switcher.php:538
 msgid "Force apply"
 msgstr ""
 
-#: dev-favicon-switcher.php:549
+#: dev-favicon-switcher.php:556
 msgid "Clear Settings"
 msgstr ""
 
-#: dev-favicon-switcher.php:558
+#: dev-favicon-switcher.php:565
 msgid "Auto-detect Development"
 msgstr ""
 
-#: dev-favicon-switcher.php:566
+#: dev-favicon-switcher.php:573
 msgid "Automatically detect .local, .test, .dev domains"
 msgstr ""
 
-#: dev-favicon-switcher.php:569
+#: dev-favicon-switcher.php:576
 msgid "Recommended: Enable this to automatically apply development favicon on common development domains."
 msgstr ""
 
-#: dev-favicon-switcher.php:577
+#: dev-favicon-switcher.php:584
 msgid "Development URLs"
 msgstr ""
 
-#: dev-favicon-switcher.php:587
+#: dev-favicon-switcher.php:594
 msgid "Enter development URLs (one per line). The plugin will switch to development favicon when the current URL starts with any of these."
 msgstr ""
 
-#: dev-favicon-switcher.php:594
+#: dev-favicon-switcher.php:601
 msgid "Save Settings"
 msgstr ""
 

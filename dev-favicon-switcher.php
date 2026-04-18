@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.5.2
+ * Version: 1.5.3
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.5.2';
+	const VERSION = '1.5.3';
 
 	/**
 	 * 管理バーのデフォルト背景色
@@ -407,13 +407,15 @@ class Dev_Favicon_Switcher {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Dev Favicon Switcher Settings', 'dev-favicon-switcher' ); ?></h1>
 			
-			<?php if ( $this->is_dev_environment( $settings ) ) : ?>
-				<div class="notice notice-info">
-					<p><?php esc_html_e( 'Development environment detected.', 'dev-favicon-switcher' ); ?></p>
-				</div>
-				<?php
-		endif;
-			?>
+			<div class="notice notice-info">
+				<p>
+					<?php
+					echo $this->is_dev_environment( $settings )
+						? esc_html__( 'Development environment detected.', 'dev-favicon-switcher' )
+						: esc_html__( 'Development environment not detected. The settings below are not currently applied to this site.', 'dev-favicon-switcher' );
+					?>
+				</p>
+			</div>
 			
 			<form method="post" action="options.php" id="dev-favicon-form">
 				<?php settings_fields( 'dev_favicon_settings_group' ); ?>
