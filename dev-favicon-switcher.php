@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.5.1
+ * Version: 1.5.2
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,12 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.5.1';
+	const VERSION = '1.5.2';
+
+	/**
+	 * 管理バーのデフォルト背景色
+	 */
+	const DEFAULT_ADMIN_BAR_BG_COLOR = '#385a5d';
 
 	private $option_name = 'dev_favicon_switcher_settings';
 	private $page_slug   = 'dev-favicon-switcher';
@@ -386,7 +391,7 @@ class Dev_Favicon_Switcher {
 			'dev_favicon_id'       => '',
 			'dev_urls'             => '',
 			'auto_detect'          => '1',
-			'admin_bar_bg_color'   => '#385a5d',
+			'admin_bar_bg_color'   => self::DEFAULT_ADMIN_BAR_BG_COLOR,
 			'admin_bar_text_color' => '',
 			'admin_bar_force'      => '0',
 		);
@@ -507,9 +512,9 @@ class Dev_Favicon_Switcher {
 									<input type="text" 
 											name="<?php echo esc_attr( $this->option_name ); ?>[admin_bar_bg_color]" 
 											id="admin_bar_bg_color" 
-											value="<?php echo esc_attr( $settings['admin_bar_bg_color'] ?? '#385a5d' ); ?>" 
+											value="<?php echo esc_attr( $settings['admin_bar_bg_color'] ?? self::DEFAULT_ADMIN_BAR_BG_COLOR ); ?>" 
 											class="dev-favicon-color-picker" 
-											data-default-color="#385a5d">
+											data-default-color="<?php echo esc_attr( self::DEFAULT_ADMIN_BAR_BG_COLOR ); ?>">
 								</div>
 								<div style="display: inline-block; margin-right: 1em; vertical-align: bottom;">
 									<label for="admin_bar_text_color" style="display: block; margin-bottom: 4px;">
@@ -801,7 +806,7 @@ class Dev_Favicon_Switcher {
 		}
 
 		$settings   = get_option( $this->option_name, array() );
-		$bg_color   = isset( $settings['admin_bar_bg_color'] ) ? $settings['admin_bar_bg_color'] : '#385a5d';
+		$bg_color   = isset( $settings['admin_bar_bg_color'] ) ? $settings['admin_bar_bg_color'] : self::DEFAULT_ADMIN_BAR_BG_COLOR;
 		$text_color = isset( $settings['admin_bar_text_color'] ) ? $settings['admin_bar_text_color'] : '';
 		$force      = ( ! empty( $settings['admin_bar_force'] ) && $settings['admin_bar_force'] === '1' ) ? ' !important' : '';
 
@@ -1025,7 +1030,7 @@ class Dev_Favicon_Switcher {
 			array(
 				'enabled'              => '1',
 				'auto_detect'          => '1',
-				'admin_bar_bg_color'   => '#385a5d',
+				'admin_bar_bg_color'   => self::DEFAULT_ADMIN_BAR_BG_COLOR,
 				'admin_bar_text_color' => '',
 				'admin_bar_force'      => '0',
 			)
