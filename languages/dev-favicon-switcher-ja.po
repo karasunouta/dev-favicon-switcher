@@ -6,7 +6,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
 "POT-Creation-Date: 2026-04-19T10:07:58+02:00\n"
-"PO-Revision-Date: 2026-04-19 18:07+0900\n"
+"PO-Revision-Date: 2026-04-19 20:00+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -198,7 +198,7 @@ msgstr ""
 
 #: build/dev-favicon-switcher-settings.js:1
 msgid "Failed to restore default icon: "
-msgstr "デフォルト開発環境ファビコンの復元に失敗しました:"
+msgstr "デフォルト開発環境ファビコンの復元に失敗しました: "
 
 #: build/dev-favicon-switcher-settings.js:1
 msgid "Unknown error"
