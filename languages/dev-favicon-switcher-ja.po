@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: Dev Favicon Switcher 1.3.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dev-favicon-"
 "switcher\n"
-"POT-Creation-Date: 2026-04-18T19:32:01+02:00\n"
-"PO-Revision-Date: 2026-04-19 02:32+0900\n"
+"POT-Creation-Date: 2026-04-19T10:07:58+02:00\n"
+"PO-Revision-Date: 2026-04-19 18:07+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -48,15 +48,15 @@ msgstr "開発環境ファビコン"
 msgid "Settings"
 msgstr "設定"
 
-#: dev-favicon-switcher.php:408
+#: dev-favicon-switcher.php:407
 msgid "Dev Favicon Switcher Settings"
 msgstr "Dev Favicon Switcher 設定"
 
-#: dev-favicon-switcher.php:414
+#: dev-favicon-switcher.php:413
 msgid "Development environment detected."
 msgstr "開発環境を検出しました。"
 
-#: dev-favicon-switcher.php:415
+#: dev-favicon-switcher.php:414
 msgid ""
 "Development environment not detected. The settings below are not currently "
 "applied to this site."
@@ -64,15 +64,15 @@ msgstr ""
 "開発環境が検出されませんでした。以下の設定は現在このサイトに適用されていませ"
 "ん。"
 
-#: dev-favicon-switcher.php:427
+#: dev-favicon-switcher.php:426
 msgid "Plugin Status"
 msgstr "プラグインステータス"
 
-#: dev-favicon-switcher.php:435
+#: dev-favicon-switcher.php:434
 msgid "Enable development favicon switching"
 msgstr "開発環境ファビコンへの切り替えを有効化"
 
-#: dev-favicon-switcher.php:438
+#: dev-favicon-switcher.php:437
 msgid ""
 "Uncheck this to temporarily disable favicon switching and related features "
 "without losing your settings. Useful for testing or presentations."
@@ -80,19 +80,19 @@ msgstr ""
 "チェックを外すと設定を維持したままファビコンの切り替え機能および関連機能を一"
 "時的に無効化します。テストやプレゼンテーションの際に有用です。"
 
-#: dev-favicon-switcher.php:446
+#: dev-favicon-switcher.php:445
 msgid "Production Favicon"
 msgstr "実働環境ファビコン"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:455
+#: dev-favicon-switcher.php:454
 #, php-format
 msgid "Current site icon (set in <a href=\"%s\">Settings > General</a>)"
 msgstr ""
 "現在のサイトアイコン ( <a href=\"%s\">設定 > 一般</a> から変更できます)"
 
 #. translators: %s: URL to the General Settings page.
-#: dev-favicon-switcher.php:464
+#: dev-favicon-switcher.php:463
 #, php-format
 msgid ""
 "No site icon set. Please set one in <a href=\"%s\">Settings > General</a>."
@@ -100,67 +100,67 @@ msgstr ""
 "WordPressサイトアイコンが未設定です。先に <a href=\"%s\">設定 > 一般</a> から"
 "設定してください。"
 
-#: dev-favicon-switcher.php:476
+#: dev-favicon-switcher.php:475
 msgid "Development Favicon"
 msgstr "開発環境ファビコン"
 
-#: dev-favicon-switcher.php:492
+#: dev-favicon-switcher.php:491
 msgid "Select Dev Favicon"
 msgstr "開発環境ファビコンを選択"
 
-#: dev-favicon-switcher.php:495 dev-favicon-switcher.php:553
+#: dev-favicon-switcher.php:494 dev-favicon-switcher.php:552
 msgid "Restore Default"
 msgstr "デフォルトに復元"
 
-#: dev-favicon-switcher.php:498
+#: dev-favicon-switcher.php:497
 msgid "Choose an icon that will be displayed in development environments."
 msgstr "開発環境で表示されるアイコン画像を選択してください。"
 
-#: dev-favicon-switcher.php:506
+#: dev-favicon-switcher.php:505
 msgid "Development Admin Bar"
 msgstr "開発環境の管理バー"
 
-#: dev-favicon-switcher.php:512
+#: dev-favicon-switcher.php:511
 msgid "Background Color"
 msgstr "背景色"
 
-#: dev-favicon-switcher.php:523
+#: dev-favicon-switcher.php:522
 msgid "Text Color"
 msgstr "文字色"
 
-#: dev-favicon-switcher.php:532
+#: dev-favicon-switcher.php:531
 msgid "Adds \"!important\" to CSS rules to aggressively force styles."
 msgstr "CSSルールに「!important」を追加して優先的に適用します。"
 
-#: dev-favicon-switcher.php:538
+#: dev-favicon-switcher.php:537
 msgid "Force apply"
 msgstr "強制的に反映"
 
-#: dev-favicon-switcher.php:556
+#: dev-favicon-switcher.php:555
 msgid "Clear Settings"
 msgstr "設定を解除"
 
-#: dev-favicon-switcher.php:565
+#: dev-favicon-switcher.php:564
 msgid "Auto-detect Development"
 msgstr "開発環境の自動検出"
 
-#: dev-favicon-switcher.php:573
+#: dev-favicon-switcher.php:572
 msgid "Automatically detect .local, .test, .dev domains"
 msgstr "「.local」や「.test」で終わるドメインを自動的に開発環境と判定"
 
-#: dev-favicon-switcher.php:576
+#: dev-favicon-switcher.php:575
 msgid ""
 "Recommended: Enable this to automatically apply development favicon on "
 "common development domains."
 msgstr ""
 "推奨: 開発環境ファビコンを一般的な開発環境で自動適用します。有効にしておくこ"
-"とをお勧めします。"
+"とをお薦めします。"
 
-#: dev-favicon-switcher.php:584
+#: dev-favicon-switcher.php:583
 msgid "Development URLs"
 msgstr "開発環境URL"
 
-#: dev-favicon-switcher.php:594
+#: dev-favicon-switcher.php:593
 msgid ""
 "Enter development URLs (one per line). The plugin will switch to development "
 "favicon when the current URL starts with any of these."
@@ -168,27 +168,27 @@ msgstr ""
 "開発環境のURLを入力してください（改行区切り）。プラグインは前方一致でURLを検"
 "証し、一致した場合は開発環境ファビコンを適用します。"
 
-#: dev-favicon-switcher.php:601
+#: dev-favicon-switcher.php:600
 msgid "Save Settings"
 msgstr "設定の保存"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Crop image"
 msgstr "画像切り抜き"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Choose Dev Favicon"
 msgstr "開発環境ファビコンの選択"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Are you sure you want to restore the default dev favicon?"
 msgstr "デフォルトの開発環境ファビコンに戻します。よろしいですか？"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Restoring..."
 msgstr "復元中…"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid ""
 "Default icon restored successfully. Please click \"Save Settings\" to apply "
 "changes."
@@ -196,19 +196,19 @@ msgstr ""
 "デフォルト開発環境ファビコンへの復元に成功しました。「設定の保存」をクリック"
 "すると適用されます。"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Failed to restore default icon: "
 msgstr "デフォルト開発環境ファビコンの復元に失敗しました:"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Unknown error"
 msgstr "Unknown エラー"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "Failed to restore default icon."
 msgstr "デフォルト開発環境ファビコンの復元に失敗しました。"
 
-#: build/dev-favicon-settings.js:1
+#: build/dev-favicon-switcher-settings.js:1
 msgid "e.g., %s"
 msgstr "例: %s"
 

@@ -3,7 +3,7 @@
  * Plugin Name: Dev Favicon Switcher
  * Plugin URI:
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.5.3
+ * Version: 1.5.4
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.5.3';
+	const VERSION = '1.5.4';
 
 	/**
 	 * 管理バーのデフォルト背景色
@@ -332,7 +332,7 @@ class Dev_Favicon_Switcher {
 		}
 
 		// パスの整理
-		$entry_point    = 'dev-favicon-settings';
+		$entry_point    = 'dev-favicon-switcher-settings';
 		$asset_path     = plugin_dir_path( __FILE__ ) . "build/{$entry_point}.asset.php";
 		$script_url     = plugins_url( "/build/{$entry_point}.js", __FILE__ );
 		$style_url      = plugins_url( "/build/{$entry_point}.css", __FILE__ );
@@ -351,9 +351,8 @@ class Dev_Favicon_Switcher {
 		wp_enqueue_script( 'wp-color-picker' );
 
 		// 管理画面用JS
-		$script_handle = 'dev-favicon-admin';
 		wp_enqueue_script(
-			$script_handle,
+			$entry_point,
 			$script_url,
 			$assets['dependencies'],
 			$assets['version'],
@@ -361,11 +360,11 @@ class Dev_Favicon_Switcher {
 		);
 
 		// 翻訳の読み込み
-		wp_set_script_translations( $script_handle, 'dev-favicon-switcher', $languages_path );
+		wp_set_script_translations( $entry_point, 'dev-favicon-switcher', $languages_path );
 
 		// JS変数のセット
 		wp_localize_script(
-			'dev-favicon-admin',
+			$entry_point,
 			'dev_favicon_switcher_ajax',
 			array(
 				'ajax_url'   => admin_url( 'admin-ajax.php' ),

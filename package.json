@@ -1,11 +1,11 @@
 {
   "name": "dev-favicon-switcher",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Automatically switches favicon (site icon) between production and development environments.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "wp-scripts build src/dev-favicon-settings.js",
-    "start": "wp-scripts start src/dev-favicon-settings.js",
+    "build": "wp-scripts build src/dev-favicon-switcher-settings.js",
+    "start": "wp-scripts start src/dev-favicon-switcher-settings.js",
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",
     "lint:js": "wp-scripts lint-js",

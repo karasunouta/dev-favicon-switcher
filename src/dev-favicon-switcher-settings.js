@@ -5,7 +5,7 @@
 import 'customize-controls';
 import 'media-views';
 import { __, sprintf } from '@wordpress/i18n';
-import './dev-favicon-settings.css';
+import './dev-favicon-switcher-settings.css';
 
 (function() {
     'use strict';
