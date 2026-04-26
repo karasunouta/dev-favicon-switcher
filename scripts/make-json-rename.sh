@@ -1,6 +1,7 @@
 #!/bin/bash
 # scripts/make-json-rename.sh
 # Usage: bash scripts/make-json-rename.sh <text-domain>
+# Requirement: {JS filename} == {WP script handle}
 
 TEXT_DOMAIN="$1"
 LANG_DIR="languages"
