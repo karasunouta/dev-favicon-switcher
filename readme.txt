@@ -1,10 +1,10 @@
 === Dev Favicon Switcher ===
 Contributors: karasunouta
-Tags: favicon, development, staging, site icon, environment
+Tags: favicon, development, staging, site icon, environment, admin bar, toolbar
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 1.5.4.1
+Stable tag: 1.5.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Repository URI: https://github.com/karasunouta/dev-favicon-switcher
@@ -22,6 +22,7 @@ Automatically switches your favicon (site icon) between production and developme
 * **Easy Icon Management**: Upload your own dev favicon using the WordPress media uploader, complete with built-in image cropping.
 * **Restore Default Icon**: Don't have an icon handy? Easily apply our unified default development favicon with a single click.
 * **Automatic Size Generation**: Automatically generates all standard WordPress site icon sizes (32x32, 180x180, 192x192, 270x270) to ensure compatibility across all devices and browsers.
+* **Admin Bar Styling**: Customize the admin bar's background and text colors to clearly identify your development environment at a glance, with a live preview and easy reset options.
 * **No Frontend Bloat**: Everything works efficiently via standard WordPress filters without adding unnecessary frontend scripts.
 
 Perfect for developers working with local environments, staging servers, and migration tools like All-in-One WP Migration.
@@ -58,6 +59,10 @@ Yes! When you upload or select a new development favicon from the media library,
 5. Customizing the admin bar colors for easier environment identification, featuring a color picker with a live preview and quick reset options.
 
 == Changelog ==
+
+= 1.5.4.2 =
+* Added "admin bar" tag and improved feature descriptions in readme.txt.
+* Updated version numbering.
 
 = 1.5.4.1 =
 * Updated readme.txt
