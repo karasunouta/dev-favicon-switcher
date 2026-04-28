@@ -4,7 +4,7 @@ Tags: favicon, development, staging, site icon, environment
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 1.5.4
+Stable tag: 1.5.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Repository URI: https://github.com/karasunouta/dev-favicon-switcher
@@ -58,6 +58,9 @@ Yes! When you upload or select a new development favicon from the media library,
 5. Customizing the admin bar colors for easier environment identification, featuring a color picker with a live preview and quick reset options.
 
 == Changelog ==
+
+= 1.5.4.1 =
+* Updated readme.txt
 
 = 1.5.4 =
 * Adjusted the naming conventions for JS files and translation files.
