@@ -9,3 +9,4 @@ webpack.config.js
 src
 scripts
 .wordpress-org
+.distignore
