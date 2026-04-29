@@ -1,0 +1,11 @@
+.git
+.github
+.gitignore
+.antigravity
+node_modules
+package.json
+package-lock.json
+webpack.config.js
+src
+scripts
+.wordpress-org
