@@ -1,12 +1,12 @@
+.antigravity
+.distignore
 .git
 .github
 .gitignore
-.antigravity
+.wordpress-org
 node_modules
 package.json
 package-lock.json
-webpack.config.js
 src
 scripts
-.wordpress-org
-.distignore
+webpack.config.js
