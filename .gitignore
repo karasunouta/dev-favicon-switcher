@@ -4,6 +4,9 @@ node_modules/
 # Source maps (development only)
 build/*.map
 
+# 没ファイル
+.rejected
+
 # その他の開発用ファイル
 .DS_Store
 *.log
