@@ -4,7 +4,7 @@ Tags: favicon, development, staging, site icon, admin bar
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 1.5.4.7
+Stable tag: 1.5.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Repository URI: https://github.com/karasunouta/dev-favicon-switcher
@@ -26,6 +26,8 @@ Automatically switches your favicon (site icon) between production and developme
 * **No Frontend Bloat**: Everything works efficiently via standard WordPress filters without adding unnecessary frontend scripts.
 
 Perfect for developers working with local environments, staging servers, and migration tools like All-in-One WP Migration.
+
+For a detailed setup and usage guide, please check out our [detailed guide](https://karasunouta.com/en/wp-plugins/dev-favicon-switcher/).
 
 Development Source:
 This plugin is developed using npm and webpack. You can find the human-readable source code and build tools in our public repository: https://github.com/karasunouta/dev-favicon-switcher
@@ -59,6 +61,9 @@ Yes! When you upload or select a new development favicon from the media library,
 5. Customizing the admin bar colors for easier environment identification, featuring a color picker with a live preview and quick reset options.
 
 == Changelog ==
+
+= 1.5.4.8 =
+* Added a link to the detailed setup guide.
 
 = 1.5.4.7 =
 * Added .distignore to the exclusion list in .distignore.

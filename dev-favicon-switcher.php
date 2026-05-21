@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Dev Favicon Switcher
- * Plugin URI:
+ * Plugin URI: https://karasunouta.com/en/wp-plugins/dev-favicon-switcher/
  * Description: Automatically switches favicon (site icon) between production and development environments.
- * Version: 1.5.4.7
+ * Version: 1.5.4.8
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
@@ -27,7 +27,7 @@ class Dev_Favicon_Switcher {
 	/**
 	 * プラグインバージョン
 	 */
-	const VERSION = '1.5.4.7';
+	const VERSION = '1.5.4.8';
 
 	/**
 	 * 管理バーのデフォルト背景色
