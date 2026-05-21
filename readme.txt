@@ -30,7 +30,7 @@ Perfect for developers working with local environments, staging servers, and mig
 For a detailed setup and usage guide, please check out our [detailed guide](https://karasunouta.com/en/wp-plugins/dev-favicon-switcher/).
 
 Development Source:
-This plugin is developed using npm and webpack. You can find the human-readable source code and build tools in our public repository: https://github.com/karasunouta/dev-favicon-switcher
+This plugin is developed using npm and webpack. You can find the human-readable source code and build tools in our [public repository](https://github.com/karasunouta/dev-favicon-switcher).
 
 == Installation ==
 
