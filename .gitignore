@@ -11,3 +11,5 @@ build/*.map
 .DS_Store
 *.log
 *.zip
+# Antigravity Rules
+/.antigravity/
