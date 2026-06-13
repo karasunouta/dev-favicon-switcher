@@ -4,7 +4,7 @@ Tags: favicon, development, staging, site icon, admin bar
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 1.5.4.8
+Stable tag: 1.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Repository URI: https://github.com/karasunouta/dev-favicon-switcher
@@ -61,6 +61,9 @@ Yes! When you upload or select a new development favicon from the media library,
 5. Customizing the admin bar colors for easier environment identification, featuring a color picker with a live preview and quick reset options.
 
 == Changelog ==
+
+= 1.5.5 =
+* Fix: Adjusted Japanese translation spacing and punctuation to align with the WordPress translation style guide.
 
 = 1.5.4.8 =
 * Added a link to the detailed setup guide.
