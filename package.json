@@ -13,7 +13,8 @@
     "make-pot": "wp i18n make-pot . languages/dev-favicon-switcher.pot --exclude=\"src\"",
     "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
-    "plugin-export": "npm run build && npm run plugin-zip"
+    "plugin-export": "npm run build && npm run plugin-zip",
+    "test:i18n": "python scripts/check_translation.py"
   },
   "repository": {
     "type": "git",
