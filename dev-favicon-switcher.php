@@ -7,7 +7,7 @@
  * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: karasunouta
- * Author URI: https://www.karasunouta.com/
+ * Author URI: https://www.karasunouta.com
  * Text Domain: dev-favicon-switcher
  * Domain Path: /languages
  * License: GPLv2 or later
