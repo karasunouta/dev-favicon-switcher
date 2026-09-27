@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/karasunouta/dev-favicon-switcher#readme",
   "devDependencies": {
-    "@wordpress/scripts": "^34.2.0"
+    "@wordpress/scripts": "^36.0.0"
   },
   "files": [
     "build",
